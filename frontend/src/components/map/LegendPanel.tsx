@@ -1,7 +1,18 @@
+import React from 'react';
 import { X, Layers } from 'lucide-react';
-import { GlassPanel } from '@/components/ui/GlassPanel.jsx';
+import { GlassPanel } from '../ui/GlassPanel';
 
-const ALL_LEGEND_ITEMS = [
+interface LegendItem {
+  id: string;
+  swatch: string;
+  label: string;
+  desc: string;
+  gradient?: string;
+  lowLabel?: string;
+  highLabel?: string;
+}
+
+const ALL_LEGEND_ITEMS: LegendItem[] = [
     {
         id: 'active',
         swatch: 'bg-emerald-500 border border-emerald-400',
@@ -28,7 +39,14 @@ const ALL_LEGEND_ITEMS = [
     }
 ];
 
-export const LegendPanel = ({ isOpen, onClose, activeLayers = [], className = '' }) => {
+interface LegendPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeLayers?: string[];
+  className?: string;
+}
+
+export const LegendPanel = ({ isOpen, onClose, activeLayers = [], className = '' }: LegendPanelProps) => {
     if (!isOpen) return null;
 
     const visibleItems = ALL_LEGEND_ITEMS.filter(item => activeLayers.includes(item.id));

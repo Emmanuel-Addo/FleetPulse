@@ -1,11 +1,11 @@
 const Testimonails = () => {
     const testimonials = [
-        { text: "PrebuiltUI helped us move faster without sacrificing design quality. The components feel production-ready.", name: "Cristofer Levin", role: "Frontend engineer", image: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200" },
-        { text: "The attention to detail in PrebuiltUI is impressive. Saved me hours of repetitive work and time. Highly recommended.", name: "Rohan Mehta", role: "Startup founder", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200" },
-        { text: "We were able ship faster using PrebuiltUI. The consistency across components made UI feel polished.", name: "Jason Kim", role: "Product designer", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60" },
-        { text: "PrebuiltUI feels like it was built by people who actually ship products. Components are clean and easy to use.", name: "Alex Turner", role: "Full stack developer", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60" },
-        { text: "PrebuiltUI helped us maintain design consistency across multiple projects. It's now a core part of design.", name: "Sofia Martinez", role: "UX designer", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&h=100&auto=format&fit=crop" },
-        { text: "Our team productivity improved noticeably after adopting PrebuiltUI. It reduced design handoff friction.", name: "Daniel Wong", role: "UI designer", image: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/userImage/userImage1.png" }
+        { text: "FleetPulse has completely transformed how we manage our delivery trucks. The real-time telemetry is incredibly accurate and reliable.", name: "Kwame Mensah", role: "Logistics Director", image: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200" },
+        { text: "Being able to see our entire fleet on a single map, complete with battery health and speed alerts, saves us hours every day.", name: "Sarah Jenkins", role: "Fleet Manager", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200" },
+        { text: "The actionable insights and automated maintenance reminders have reduced our vehicle downtime by 30% this quarter.", name: "David Osei", role: "Operations Lead", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60" },
+        { text: "I love how easy it is to dispatch maintenance issues directly from the dashboard. The UI is clean, intuitive, and fast.", name: "Elena Rodriguez", role: "Dispatcher", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60" },
+        { text: "FleetPulse's routing and live tracking features ensure our drivers stay on course, dramatically improving our delivery times.", name: "Mark Thompson", role: "Supply Chain VP", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&h=100&auto=format&fit=crop" },
+        { text: "Finally, a telemetry dashboard that doesn't feel cluttered. It gives us exactly the metrics we need without the noise.", name: "Amma Frimpong", role: "Fleet Analyst", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&auto=format&fit=crop" }
     ];
 
     const rows = [
@@ -72,10 +72,10 @@ const Testimonails = () => {
                             <span className="text-xs text-neutral-600">Loved by clients</span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-medium text-neutral-900 mb-4">
-                            What people are saying
+                            What our fleet partners say
                         </h2>
                         <p className="text-neutral-600 text-sm max-w-96 mx-auto">
-                            Real feedback from founders, developers and teams building production-ready products.
+                            Real feedback from logistics directors, dispatchers, and operations teams managing real fleets.
                         </p>
                     </div>
 

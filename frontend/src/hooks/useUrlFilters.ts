@@ -8,6 +8,7 @@ export interface FilterState {
   types: AssetType[];
   batteryMin: number;
   batteryMax: number;
+  tags: string[];
 }
 
 export const useUrlFilters = () => {
@@ -16,6 +17,7 @@ export const useUrlFilters = () => {
   const filters = useMemo<FilterState>(() => {
     const statusParam = searchParams.get('status');
     const typeParam = searchParams.get('type');
+    const tagsParam = searchParams.get('tags');
     const bMin = searchParams.get('batteryMin');
     const bMax = searchParams.get('batteryMax');
 
@@ -23,6 +25,7 @@ export const useUrlFilters = () => {
       q: searchParams.get('q') || '',
       statuses: statusParam ? (statusParam.split(',') as AssetStatus[]) : [],
       types: typeParam ? (typeParam.split(',') as AssetType[]) : [],
+      tags: tagsParam ? tagsParam.split(',') : [],
       batteryMin: bMin ? parseInt(bMin, 10) : 0,
       batteryMax: bMax ? parseInt(bMax, 10) : 100,
     };
@@ -35,7 +38,10 @@ export const useUrlFilters = () => {
       if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
         newParams.delete(key === 'statuses' ? 'status' : key === 'types' ? 'type' : key);
       } else if (Array.isArray(value)) {
-        newParams.set(key === 'statuses' ? 'status' : 'type', value.join(','));
+        newParams.set(
+          key === 'statuses' ? 'status' : key === 'types' ? 'type' : 'tags', 
+          value.join(',')
+        );
       } else {
         newParams.set(key, value.toString());
       }

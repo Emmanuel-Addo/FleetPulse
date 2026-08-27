@@ -27,9 +27,19 @@ const BASE_LNG = -0.1870;
 
 let assets: Asset[] = [];
 
+const MOCK_TAGS = ['Delayed', 'Low Fuel', 'Over Speeding', 'Local Dispatch', 'Re-routed', 'Priority'];
+
 // Initialize 1000 assets
 const initializeAssets = () => {
   for (let i = 0; i < 1000; i++) {
+    // Generate 1-2 random tags
+    const assetTags: string[] = [];
+    const numTags = Math.floor(Math.random() * 2) + 1;
+    for (let t = 0; t < numTags; t++) {
+      const tag = MOCK_TAGS[Math.floor(Math.random() * MOCK_TAGS.length)];
+      if (!assetTags.includes(tag)) assetTags.push(tag);
+    }
+
     assets.push({
       id: `ASSET-${i.toString().padStart(4, '0')}`,
       name: `Vehicle ${i}`,
@@ -40,6 +50,7 @@ const initializeAssets = () => {
       lng: BASE_LNG + (Math.random() - 0.5) * 2,
       speed: Math.floor(Math.random() * 80),
       driverName: `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`,
+      tags: assetTags,
       lastUpdated: Date.now()
     });
   }
@@ -48,15 +59,16 @@ const initializeAssets = () => {
 let isRunning = false;
 let intervalId: number | null = null;
 
+const ctx: any = self;
+
 const startTelemetry = () => {
   if (isRunning) return;
   isRunning = true;
   
   // Send initial batch
-  postMessage({ type: 'INITIAL_STATE', payload: assets });
+  ctx.postMessage({ type: 'INITIAL_STATE', payload: assets });
 
-  // Simulate updates 2-5 times a second (DISABLED: User requested static data for frontend project)
-  /*
+  // Simulate updates 2-5 times a second
   intervalId = setInterval(() => {
     // Pick a random subset of 10-50 assets to update
     const numToUpdate = Math.floor(Math.random() * 40) + 10;
@@ -78,9 +90,8 @@ const startTelemetry = () => {
       updates.push({ ...asset });
     }
     
-    postMessage({ type: 'TELEMETRY_UPDATE', payload: updates });
+    ctx.postMessage({ type: 'TELEMETRY_UPDATE', payload: updates });
   }, 1000 / (Math.random() * 3 + 2)); // 2 to 5 events per second
-  */
 };
 
 const stopTelemetry = () => {
@@ -91,7 +102,7 @@ const stopTelemetry = () => {
   }
 };
 
-self.onmessage = (e) => {
+ctx.onmessage = (e: MessageEvent) => {
   if (e.data === 'START') {
     if (assets.length === 0) initializeAssets();
     startTelemetry();

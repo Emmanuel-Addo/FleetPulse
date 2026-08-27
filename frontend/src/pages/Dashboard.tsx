@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../components/ui/tooltip';
-import MapComponent from '../components/map/MapComponent.jsx';
+import MapComponent from '../components/map/MapComponent';
 import { toast } from 'react-toastify';
 import {
   AlertTriangle, Bell, CheckCircle2, Clock, ShieldAlert, Wrench, ClipboardList,
@@ -97,12 +97,38 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filte
               <span className="text-xs font-bold w-6">{filters.batteryMin}%</span>
             </div>
             
+            {/* Tag Toggles */}
+            <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-lg border border-gray-200">
+              {['Delayed', 'Low Fuel', 'Over Speeding', 'Local Dispatch', 'Re-routed', 'Priority'].map(tag => {
+                const isSelected = filters.tags?.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      const next = isSelected 
+                        ? filters.tags.filter((t: string) => t !== tag)
+                        : [...(filters.tags || []), tag];
+                      setFilter('tags', next);
+                    }}
+                    className={`px-2.5 py-0.5 text-[10px] font-semibold rounded transition ${
+                      isSelected
+                        ? 'bg-black text-white'
+                        : 'bg-white text-gray-500 border border-gray-100 hover:text-gray-700'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Clear All */}
-            {(filters.statuses.length > 0 || filters.batteryMin > 0 || filters.q) && (
+            {(filters.statuses.length > 0 || filters.batteryMin > 0 || (filters.tags && filters.tags.length > 0) || filters.q) && (
               <button 
                 onClick={() => {
                   setFilter('statuses', []);
                   setFilter('batteryMin', 0);
+                  setFilter('tags', []);
                   setFilter('q', '');
                 }}
                 className="text-xs font-medium text-red-500 hover:text-red-600"
@@ -117,38 +143,7 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filte
   );
 }
 
-// ─── Action Queue ────────────────────────────────────────────────────────────
 
-interface ActionItem { icon: React.ElementType; label: string; count: number; urgent: boolean; }
-
-// Snapshot is taken ONCE when the fleet first loads — numbers won't flicker on every telemetry tick
-function ActionQueue({ snapshot }: { snapshot: ActionItem[] }) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">Action queue</h2>
-      </div>
-      <div className="grid grid-cols-7 gap-3">
-        {snapshot.map(({ icon: Icon, label, count, urgent }) => (
-          <Card key={label} className={`cursor-pointer hover:shadow-md transition-all group relative ${urgent && count > 0 ? 'border-red-200 bg-red-50/30' : ''}`}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <Icon size={16} className={urgent && count > 0 ? 'text-red-500' : 'text-gray-400'} />
-                {urgent && count > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                )}
-              </div>
-              <p className={`text-2xl font-bold mb-1 ${urgent && count > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {count}
-              </p>
-              <p className="text-[11px] text-gray-500 leading-tight">{label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ─── Asset Status Chart ───────────────────────────────────────────────────────
 
@@ -200,47 +195,7 @@ function AssetStatusChart({ assets }: { assets: Asset[] }) {
   );
 }
 
-// ─── Live Fleet Panel ─────────────────────────────────────────────────────────
 
-function LiveFleetPanel({ assets }: { assets: Asset[] }) {
-  const active = assets.filter(a => a.status === 'Active').length;
-  return (
-    <Card className="flex flex-col overflow-hidden">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Live fleet</CardTitle>
-            <CardDescription className="mt-1">{active} vehicles active right now</CardDescription>
-          </div>
-          <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 p-0 relative min-h-0" style={{ minHeight: '220px' }}>
-        <MapComponent
-          basemap="osm"
-          activeLayers={[]}
-        />
-        {/* Overlay vehicle count pills */}
-        <div className="absolute bottom-3 left-3 flex gap-2 z-[500]">
-          <span className="bg-white/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {active} Active
-          </span>
-          <span className="bg-white/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {assets.filter(a => a.status === 'Offline').length} Offline
-          </span>
-        </div>
-      </CardContent>
-      <CardContent className="border-t border-border pt-3 pb-3">
-        <button className="text-xs font-medium text-gray-600 hover:text-black flex items-center gap-1 transition">
-          Open full map <ChevronRight size={12} />
-        </button>
-      </CardContent>
-    </Card>
-  );
-}
 
 // ─── Powertrain Mix ───────────────────────────────────────────────────────────
 
@@ -386,7 +341,12 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
                       <div className={`w-1.5 h-8 rounded-full ${statusDot[asset.status]}`} />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">{asset.name}</p>
-                        <p className="text-[11px] text-gray-400">{asset.type}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-gray-400">{asset.type}</span>
+                          {asset.tags?.map(t => (
+                            <span key={t} className="text-[9px] bg-zinc-100 text-zinc-600 px-1 py-0.2 rounded border border-zinc-200">{t}</span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <p className="text-xs text-gray-600 truncate">{asset.driverName || '—'}</p>
@@ -453,20 +413,6 @@ const Dashboard = () => {
   
   const displayedAssets = useMemo(() => filterAssets(allAssets, filters), [allAssets, filters]);
 
-  // Snapshot the Action Queue counts ONCE when the fleet first populates
-  // This prevents numbers from flickering on every telemetry tick
-  const actionSnapshotRef = useRef<ActionItem[] | null>(null);
-  if (actionSnapshotRef.current === null && allAssets.length > 0) {
-    actionSnapshotRef.current = [
-      { icon: Clock,         label: 'Overdue services',      count: allAssets.filter(a => a.battery < 10).length,             urgent: true  },
-      { icon: Bell,          label: 'Reminders due soon',    count: Math.floor(allAssets.length * 0.02),                      urgent: false },
-      { icon: AlertTriangle, label: 'Open critical issues',  count: allAssets.filter(a => a.battery < 5).length,              urgent: true  },
-      { icon: ShieldAlert,   label: 'Compliance expiring',   count: Math.floor(allAssets.length * 0.005),                     urgent: false },
-      { icon: Zap,           label: 'Out of service',        count: allAssets.filter(a => a.status === 'Offline').length,     urgent: true  },
-      { icon: Wrench,        label: 'Overdue inspections',   count: allAssets.filter(a => a.status === 'Maintenance').length, urgent: false },
-      { icon: ClipboardList, label: 'Inspections pending',   count: Math.floor(allAssets.length * 0.015),                    urgent: false },
-    ];
-  }
 
   const handleAction = async (id: string, action: string) => {
     const updates: Partial<Asset> = action === 'Lock' ? { status: 'Offline' } : { status: 'Maintenance' };
@@ -499,13 +445,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Action Queue — uses a one-time snapshot so numbers don't flicker */}
-      {actionSnapshotRef.current && <ActionQueue snapshot={actionSnapshotRef.current} />}
 
-      {/* Tri-split Data Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Dual-split Data Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <AssetStatusChart assets={allAssets} />
-        <LiveFleetPanel assets={activeAssets} />
         <PowertrainMix assets={allAssets} />
       </div>
 

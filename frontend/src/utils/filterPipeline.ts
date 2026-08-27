@@ -27,6 +27,12 @@ export const filterAssets = (assets: Asset[], filters: FilterState): Asset[] => 
       return false;
     }
 
+    // 5. Tag filter
+    if (filters.tags && filters.tags.length > 0) {
+      const hasMatchingTag = asset.tags?.some(t => filters.tags.includes(t));
+      if (!hasMatchingTag) return false;
+    }
+
     return true;
   });
 };

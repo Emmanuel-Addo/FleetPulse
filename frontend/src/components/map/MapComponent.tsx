@@ -1,18 +1,15 @@
-"use client";
-
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Loader2, Globe } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { FLEET_ASSETS } from '../../assets/assets';
 
 const EMPTY_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-delete L.Icon.Default.prototype._getIconUrl;
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconUrl: EMPTY_GIF,
     iconRetinaUrl: EMPTY_GIF,
@@ -21,13 +18,18 @@ L.Icon.Default.mergeOptions({
     shadowSize: [0, 0],
 });
 
-function MapController({ bounds, region, zoomCommand, mapCommand }) {
-    const map = useMap();
-    // Ghana center — Accra area
-    const GHANA_CENTER = [7.9465, -1.0232];
-    const nationalCenterRef = useRef(GHANA_CENTER);
+interface MapControllerProps {
+  bounds: any;
+  region: any;
+  zoomCommand: any;
+  mapCommand: any;
+}
 
-    // On first mount, always fly to Ghana
+function MapController({ bounds, region, zoomCommand, mapCommand }: MapControllerProps) {
+    const map = useMap();
+    const GHANA_CENTER: L.LatLngTuple = [7.9465, -1.0232];
+    const nationalCenterRef = useRef<L.LatLngTuple>(GHANA_CENTER);
+
     useEffect(() => {
         map.flyTo(GHANA_CENTER, 7, { duration: 1.2, easeLinearity: 0.25 });
     }, [map]);
@@ -62,13 +64,17 @@ function MapController({ bounds, region, zoomCommand, mapCommand }) {
     return null;
 }
 
-function HoverLayer({ data }) {
+interface HoverLayerProps {
+  data: any;
+}
+
+function HoverLayer({ data }: HoverLayerProps) {
     const map = useMap();
     return (
         <GeoJSON
             data={data}
-            style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' })}
-            onEachFeature={(feature, layer) => {
+            style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' } as any)}
+            onEachFeature={(feature, layer: any) => {
                 const name = feature.properties?.DISTRICTS || feature.properties?.REGIONS || '';
                 if (!name) return;
 
@@ -80,7 +86,7 @@ function HoverLayer({ data }) {
                     offset: [0, -4],
                 });
 
-                let idleTimer = null;
+                let idleTimer: any = null;
 
                 const resetTimer = () => {
                     if (idleTimer) clearTimeout(idleTimer);
@@ -105,6 +111,19 @@ function HoverLayer({ data }) {
     );
 }
 
+interface MapComponentProps {
+  year?: any;
+  region?: any;
+  district?: any;
+  activeLayers?: string[];
+  zoomCommand?: any;
+  mapCommand?: any;
+  basemap?: string;
+  ndviOpacity?: number;
+  selectedAssetId?: string | null;
+  onSelectAsset?: (asset: any) => void;
+}
+
 export default function MapComponent({
     year,
     region,
@@ -116,14 +135,14 @@ export default function MapComponent({
     ndviOpacity = 1,
     selectedAssetId,
     onSelectAsset,
-}) {
-    const [layers, setLayers] = useState({ ndvi: null, region: null, district: null });
-    const [prevLayers, setPrevLayers] = useState(null);
-    const [fetchedFilters, setFetchedFilters] = useState({ year: null, region: null, district: null });
-    const [bounds, setBounds] = useState(null);
-    const [hoverGeoJSON, setHoverGeoJSON] = useState(null);
+}: MapComponentProps) {
+    const [layers, setLayers] = useState<any>({ ndvi: null, region: null, district: null });
+    const [prevLayers, setPrevLayers] = useState<any>(null);
+    const [fetchedFilters, setFetchedFilters] = useState<any>({ year: null, region: null, district: null });
+    const [bounds, setBounds] = useState<any>(null);
+    const [hoverGeoJSON, setHoverGeoJSON] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    const clearPrevLayersTimeoutRef = useRef(null);
+    const clearPrevLayersTimeoutRef = useRef<any>(null);
     const latestLayersRef = useRef(layers);
 
     useEffect(() => {
@@ -254,7 +273,11 @@ export default function MapComponent({
     );
 }
 
-function BasemapLayer({ type }) {
+interface BasemapLayerProps {
+  type: string;
+}
+
+function BasemapLayer({ type }: BasemapLayerProps) {
     switch (type) {
         case 'satellite':
             return (

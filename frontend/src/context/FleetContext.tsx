@@ -14,6 +14,7 @@ export interface Asset {
   lng: number;
   speed?: number;
   driverName?: string;
+  tags?: string[];
   lastUpdated: number;
 }
 
@@ -34,16 +35,48 @@ type FleetAction =
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; updates: Partial<Asset> } }
   | { type: 'ROLLBACK_UPDATE'; payload: { id: string; previous: Asset } };
 
-const initialState: FleetState = {
-  assets: {},
-  isOffline: false,
-  totalStats: {
-    totalVehicles: 0,
-    availableVehicles: 0,
-    totalDrivers: 0,
-    availableDrivers: 0,
+const getInitialState = (): FleetState => {
+  try {
+    const cached = localStorage.getItem('fleet_assets');
+    if (cached) {
+      const assets = JSON.parse(cached);
+      let totalVehicles = 0;
+      let availableVehicles = 0;
+      let totalDrivers = 0;
+      let availableDrivers = 0;
+
+      Object.values(assets).forEach((asset: any) => {
+        totalVehicles++;
+        if (asset.status === 'Active' || asset.status === 'Idle') availableVehicles++;
+        if (asset.driverName) {
+            totalDrivers++;
+            if (asset.status === 'Active' || asset.status === 'Idle') availableDrivers++;
+        }
+      });
+
+      return {
+        assets,
+        isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+        totalStats: { totalVehicles, availableVehicles, totalDrivers, availableDrivers }
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load assets from localStorage', e);
   }
+
+  return {
+    assets: {},
+    isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+    totalStats: {
+      totalVehicles: 0,
+      availableVehicles: 0,
+      totalDrivers: 0,
+      availableDrivers: 0,
+    }
+  };
 };
+
+const initialState: FleetState = getInitialState();
 
 const fleetReducer = (state: FleetState, action: FleetAction): FleetState => {
   switch (action.type) {
@@ -73,6 +106,13 @@ const fleetReducer = (state: FleetState, action: FleetAction): FleetState => {
         }
       });
 
+      // Persist locally
+      try {
+        localStorage.setItem('fleet_assets', JSON.stringify(newAssets));
+      } catch (e) {
+        console.error('Failed to save assets to localStorage', e);
+      }
+
       return {
         ...state,
         assets: newAssets,
@@ -81,25 +121,39 @@ const fleetReducer = (state: FleetState, action: FleetAction): FleetState => {
     }
     case 'SET_OFFLINE':
       return { ...state, isOffline: action.payload };
-    case 'OPTIMISTIC_UPDATE':
-      return {
-        ...state,
-        assets: {
-          ...state.assets,
-          [action.payload.id]: {
-            ...state.assets[action.payload.id],
-            ...action.payload.updates
-          }
+    case 'OPTIMISTIC_UPDATE': {
+      const nextAssets = {
+        ...state.assets,
+        [action.payload.id]: {
+          ...state.assets[action.payload.id],
+          ...action.payload.updates
         }
       };
-    case 'ROLLBACK_UPDATE':
+      try {
+        localStorage.setItem('fleet_assets', JSON.stringify(nextAssets));
+      } catch (e) {
+        console.error(e);
+      }
       return {
         ...state,
-        assets: {
-          ...state.assets,
-          [action.payload.id]: action.payload.previous
-        }
+        assets: nextAssets
       };
+    }
+    case 'ROLLBACK_UPDATE': {
+      const nextAssets = {
+        ...state.assets,
+        [action.payload.id]: action.payload.previous
+      };
+      try {
+        localStorage.setItem('fleet_assets', JSON.stringify(nextAssets));
+      } catch (e) {
+        console.error(e);
+      }
+      return {
+        ...state,
+        assets: nextAssets
+      };
+    }
     default:
       return state;
   }

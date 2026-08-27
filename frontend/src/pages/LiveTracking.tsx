@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { useFleet, Asset } from '../context/FleetContext';
 import { FLEET_ASSETS, FleetAsset } from '../assets/assets';
-import MapComponent from '../components/map/MapComponent.jsx';
+import MapComponent from '../components/map/MapComponent';
+import { toast } from 'react-toastify';
 import {
   Search, Battery, Zap, MapPin, User, Radio,
   Wifi, ShieldAlert, Truck, Car, Bus,
