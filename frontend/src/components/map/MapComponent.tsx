@@ -27,7 +27,7 @@ interface MapControllerProps {
 
 function MapController({ bounds, region, zoomCommand, mapCommand }: MapControllerProps) {
     const map = useMap();
-    const nationalCenterRef = useRef<L.LatLngTuple>([7.9465, -1.0232]);
+    const nationalCenterRef = useRef<any>([7.9465, -1.0232]);
 
     // No forced flyTo on mount — map starts at world view
 
@@ -71,7 +71,7 @@ function HoverLayer({ data }: HoverLayerProps) {
         <GeoJSON
             data={data}
             style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' } as any)}
-            onEachFeature={(feature, layer: any) => {
+            onEachFeature={(feature: any, layer: any) => {
                 const name = feature.properties?.DISTRICTS || feature.properties?.REGIONS || '';
                 if (!name) return;
 
