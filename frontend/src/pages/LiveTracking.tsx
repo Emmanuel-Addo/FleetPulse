@@ -198,8 +198,67 @@ const LiveTracking = () => {
   return (
     <div className="flex -m-7 h-[calc(100vh-4rem)] bg-white overflow-hidden">
 
-      {/* ── Left Sidebar ───────────────────────────────────────── */}
-      <div className="w-80 flex flex-col shrink-0 border-r border-gray-100 bg-white z-10 shadow-sm">
+      {/* ── Map Area ────────────────────────────────────────────── */}
+      <div className="flex-1 relative bg-gray-100">
+        <MapComponent
+          basemap={basemap}
+          activeLayers={[]}
+          mapCommand={mapCommand}
+          selectedAssetId={selectedAsset?.id}
+          onSelectAsset={handleSelectAsset}
+        />
+
+        {/* Layer toggle */}
+        <div className="absolute top-4 left-4 z-[500]">
+          <div className="flex items-center bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => setBasemap('osm')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
+                basemap === 'osm' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Street
+            </button>
+            <button
+              onClick={() => setBasemap('satellite')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
+                basemap === 'satellite' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Satellite
+            </button>
+          </div>
+        </div>
+
+        {/* Selected vehicle detail card */}
+        {selectedAsset && (
+          <VehicleDetail
+            asset={selectedAsset}
+            onClose={() => setSelectedAsset(null)}
+          />
+        )}
+
+        {/* Top overlay stats */}
+        <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
+          <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {activeCount} vehicles active
+            </div>
+          </div>
+          {alertCount > 0 && (
+            <div className="bg-white/90 backdrop-blur-sm border border-red-200 rounded-xl px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
+                <AlertTriangle size={12} />
+                {alertCount} active alerts
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Right Sidebar ───────────────────────────────────────── */}
+      <div className="w-[420px] flex flex-col shrink-0 border-l border-gray-100 bg-white z-10 shadow-sm mr-4">
 
         {/* Tabs */}
         <div className="flex px-4 pt-4 pb-3 gap-2 border-b border-gray-100">
@@ -272,67 +331,9 @@ const LiveTracking = () => {
           </p>
         </div>
       </div>
-
-      {/* ── Map Area ────────────────────────────────────────────── */}
-      <div className="flex-1 relative bg-gray-100">
-        <MapComponent
-          basemap={basemap}
-          activeLayers={[]}
-          mapCommand={mapCommand}
-          selectedAssetId={selectedAsset?.id}
-          onSelectAsset={handleSelectAsset}
-        />
-
-        {/* Layer toggle */}
-        <div className="absolute top-4 left-4 z-[500]">
-          <div className="flex items-center bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <button
-              onClick={() => setBasemap('osm')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
-                basemap === 'osm' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Street
-            </button>
-            <button
-              onClick={() => setBasemap('satellite')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
-                basemap === 'satellite' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Satellite
-            </button>
-          </div>
-        </div>
-
-        {/* Selected vehicle detail card */}
-        {selectedAsset && (
-          <VehicleDetail
-            asset={selectedAsset}
-            onClose={() => setSelectedAsset(null)}
-          />
-        )}
-
-        {/* Top overlay stats */}
-        <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
-          <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {activeCount} vehicles active
-            </div>
-          </div>
-          {alertCount > 0 && (
-            <div className="bg-white/90 backdrop-blur-sm border border-red-200 rounded-xl px-3 py-2 shadow-sm">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
-                <AlertTriangle size={12} />
-                {alertCount} active alerts
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
 
 export default LiveTracking;
+

@@ -27,12 +27,9 @@ interface MapControllerProps {
 
 function MapController({ bounds, region, zoomCommand, mapCommand }: MapControllerProps) {
     const map = useMap();
-    const GHANA_CENTER: L.LatLngTuple = [7.9465, -1.0232];
-    const nationalCenterRef = useRef<L.LatLngTuple>(GHANA_CENTER);
+    const nationalCenterRef = useRef<L.LatLngTuple>([7.9465, -1.0232]);
 
-    useEffect(() => {
-        map.flyTo(GHANA_CENTER, 7, { duration: 1.2, easeLinearity: 0.25 });
-    }, [map]);
+    // No forced flyTo on mount — map starts at world view
 
     useEffect(() => {
         if (!bounds || bounds.length !== 2) return;
@@ -40,7 +37,7 @@ function MapController({ bounds, region, zoomCommand, mapCommand }: MapControlle
             const centerLat = (bounds[0][0] + bounds[1][0]) / 2;
             const centerLng = (bounds[0][1] + bounds[1][1]) / 2;
             nationalCenterRef.current = [centerLat, centerLng];
-            map.flyTo([centerLat, centerLng], 7, { duration: 1.5, easeLinearity: 0.25 });
+            map.flyTo([centerLat, centerLng], 5, { duration: 1.5, easeLinearity: 0.25 });
         } else {
             map.flyToBounds(bounds, { duration: 1.5, easeLinearity: 0.25 });
         }
@@ -55,7 +52,7 @@ function MapController({ bounds, region, zoomCommand, mapCommand }: MapControlle
     useEffect(() => {
         if (!mapCommand) return;
         if (mapCommand.type === 'reset') {
-            map.flyTo(GHANA_CENTER, 7, { duration: 1.8, easeLinearity: 0.25 });
+            map.flyTo([7.9465, -1.0232], 5, { duration: 1.8, easeLinearity: 0.25 });
         } else if (mapCommand.type === 'flyTo') {
             map.flyTo([mapCommand.lat, mapCommand.lng], mapCommand.zoom ?? 12, { duration: 1.5, easeLinearity: 0.25 });
         }
@@ -157,18 +154,14 @@ export default function MapComponent({
     return (
         <div className="relative h-full w-full">
             <MapContainer
-                center={[7.9465, -1.0232]}
-                zoom={7}
-                minZoom={6}
+                center={[20, 0]}
+                zoom={3}
+                minZoom={2}
                 maxZoom={18}
                 zoomSnap={0.5}
                 className="h-full w-full"
                 zoomControl={false}
-                maxBounds={[
-                    [4.5, -3.5],   // SW corner of Ghana
-                    [11.5, 1.5],   // NE corner of Ghana
-                ]}
-                maxBoundsViscosity={1.0}
+                worldCopyJump={true}
             >
                 <BasemapLayer type={basemap} />
 
