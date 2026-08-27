@@ -1,16 +1,19 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useFleet, Asset, AssetStatus } from '../context/FleetContext';
+import { useUrlFilters } from '../hooks/useUrlFilters';
+import { filterAssets } from '../utils/filterPipeline';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../components/ui/tooltip';
+import MapComponent from '../components/map/MapComponent.jsx';
 import { toast } from 'react-toastify';
 import {
   AlertTriangle, Bell, CheckCircle2, Clock, ShieldAlert, Wrench, ClipboardList,
   ChevronRight, RefreshCw, Lock, RotateCcw, Construction, Filter, SortAsc,
-  TrendingUp, TrendingDown, MapPin, Zap, Activity, Truck, Car, Bus
+  TrendingUp, TrendingDown, MapPin, Zap, Activity, Truck, Car, Bus, Battery
 } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -39,35 +42,100 @@ function StatTrend({ value }: { value: number }) {
   );
 }
 
+// ─── Filter Panel ──────────────────────────────────────────────────────────────
+
+function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filters: any, setFilter: any, totalAssets: number, filteredCount: number }) {
+  const statuses = ['Active', 'Idle', 'Maintenance', 'Offline'];
+  
+  const toggleStatus = (status: string) => {
+    if (filters.statuses.includes(status)) {
+      setFilter('statuses', filters.statuses.filter((s: string) => s !== status));
+    } else {
+      setFilter('statuses', [...filters.statuses, status]);
+    }
+  };
+
+  return (
+    <Card className="bg-white border-border shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-400" />
+            <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
+            <span className="text-xs text-gray-500 ml-2">Showing {filteredCount} of {totalAssets}</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Status Toggles */}
+            <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-lg border border-gray-200">
+              {statuses.map(status => (
+                <button
+                  key={status}
+                  onClick={() => toggleStatus(status)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition ${
+                    filters.statuses.includes(status)
+                      ? 'bg-white shadow-sm border border-gray-200 text-gray-900'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            {/* Battery Filter */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+              <Battery size={14} className="text-gray-400" />
+              <span className="text-xs font-medium text-gray-600">Battery Min:</span>
+              <input 
+                type="range" 
+                min="0" max="100" step="5"
+                value={filters.batteryMin}
+                onChange={(e) => setFilter('batteryMin', parseInt(e.target.value))}
+                className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <span className="text-xs font-bold w-6">{filters.batteryMin}%</span>
+            </div>
+            
+            {/* Clear All */}
+            {(filters.statuses.length > 0 || filters.batteryMin > 0 || filters.q) && (
+              <button 
+                onClick={() => {
+                  setFilter('statuses', []);
+                  setFilter('batteryMin', 0);
+                  setFilter('q', '');
+                }}
+                className="text-xs font-medium text-red-500 hover:text-red-600"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Action Queue ────────────────────────────────────────────────────────────
 
 interface ActionItem { icon: React.ElementType; label: string; count: number; urgent: boolean; }
 
-function ActionQueue({ assets }: { assets: Asset[] }) {
-  const items: ActionItem[] = [
-    { icon: Clock,         label: 'Overdue services',           count: assets.filter(a => a.battery < 10).length,            urgent: true  },
-    { icon: Bell,          label: 'Reminders due soon',         count: Math.floor(assets.length * 0.02),                    urgent: false },
-    { icon: AlertTriangle, label: 'Open critical issues',       count: assets.filter(a => a.battery < 5).length,             urgent: true  },
-    { icon: ShieldAlert,   label: 'Compliance expiring',        count: Math.floor(assets.length * 0.005),                   urgent: false },
-    { icon: Zap,           label: 'Assets out of service',      count: assets.filter(a => a.status === 'Offline').length,   urgent: true  },
-    { icon: Wrench,        label: 'Overdue inspections',        count: assets.filter(a => a.status === 'Maintenance').length, urgent: false },
-    { icon: ClipboardList, label: 'Inspections pending',        count: Math.floor(assets.length * 0.015),                  urgent: false },
-  ];
-
+// Snapshot is taken ONCE when the fleet first loads — numbers won't flicker on every telemetry tick
+function ActionQueue({ snapshot }: { snapshot: ActionItem[] }) {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-gray-700">Action queue</h2>
-        <button className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition"><RefreshCw size={11} /> Refresh</button>
       </div>
       <div className="grid grid-cols-7 gap-3">
-        {items.map(({ icon: Icon, label, count, urgent }) => (
+        {snapshot.map(({ icon: Icon, label, count, urgent }) => (
           <Card key={label} className={`cursor-pointer hover:shadow-md transition-all group relative ${urgent && count > 0 ? 'border-red-200 bg-red-50/30' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
                 <Icon size={16} className={urgent && count > 0 ? 'text-red-500' : 'text-gray-400'} />
                 {urgent && count > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                 )}
               </div>
               <p className={`text-2xl font-bold mb-1 ${urgent && count > 0 ? 'text-red-600' : 'text-gray-900'}`}>
@@ -150,14 +218,13 @@ function LiveFleetPanel({ assets }: { assets: Asset[] }) {
           </span>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 relative min-h-0">
-        <img
-          src="/map_bg.png"
-          alt="Live fleet map"
-          className="w-full h-full object-cover min-h-48"
+      <CardContent className="flex-1 p-0 relative min-h-0" style={{ minHeight: '220px' }}>
+        <MapComponent
+          basemap="osm"
+          activeLayers={[]}
         />
         {/* Overlay vehicle count pills */}
-        <div className="absolute bottom-3 left-3 flex gap-2">
+        <div className="absolute bottom-3 left-3 flex gap-2 z-[500]">
           <span className="bg-white/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {active} Active
           </span>
@@ -185,9 +252,9 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
   }), [assets]);
   const total = assets.length || 1;
   const types = [
-    { key: 'Truck', icon: Truck, color: 'bg-gray-900' },
-    { key: 'Van',   icon: Bus,   color: 'bg-gray-500' },
-    { key: 'Car',   icon: Car,   color: 'bg-gray-300' },
+    { key: 'Truck', icon: Truck, color: 'bg-gray-900', stroke: '#111827' },
+    { key: 'Van',   icon: Bus,   color: 'bg-gray-500', stroke: '#6b7280' },
+    { key: 'Car',   icon: Car,   color: 'bg-gray-300', stroke: '#d1d5db' },
   ] as const;
 
   return (
@@ -203,7 +270,7 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
             {(() => {
               let offset = 0;
               const circumference = 2 * Math.PI * 38;
-              return types.map(({ key, color }) => {
+              return types.map(({ key, color, stroke }) => {
                 const pct = counts[key] / total;
                 const strokeDasharray = `${pct * circumference} ${circumference}`;
                 const el = (
@@ -212,7 +279,7 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
                     cx="50" cy="50" r="38"
                     fill="none"
                     strokeWidth="12"
-                    className={color.replace('bg-', 'stroke-')}
+                    stroke={stroke}
                     strokeDasharray={strokeDasharray}
                     strokeDashoffset={-offset * circumference}
                     strokeLinecap="round"
@@ -229,7 +296,7 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
           </div>
         </div>
         <div className="space-y-2.5">
-          {types.map(({ key, icon: Icon, color }) => (
+          {types.map(({ key, icon: Icon, color, stroke }) => (
             <div key={key} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className={`w-2.5 h-2.5 rounded-sm ${color}`} />
@@ -242,29 +309,6 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
               </div>
             </div>
           ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Compliance Card ──────────────────────────────────────────────────────────
-
-function ComplianceCard({ title, description, value, icon: Icon }: {
-  title: string; description: string; value: number; icon: React.ElementType;
-}) {
-  const color = value >= 80 ? 'text-emerald-600' : value >= 60 ? 'text-amber-600' : 'text-red-500';
-  return (
-    <Card>
-      <CardContent className="p-5 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-gray-800">{title}</p>
-          <p className="text-xs text-gray-400 mt-0.5 mb-3">{description}</p>
-          <Progress value={value} className="w-40 h-1.5" />
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <Icon size={20} className="text-gray-300" />
-          <p className={`text-2xl font-bold ${color}`}>{value}%</p>
         </div>
       </CardContent>
     </Card>
@@ -399,19 +443,30 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
 
 const Dashboard = () => {
   const { state, performRemoteAction } = useFleet();
-  const [searchParams] = useSearchParams();
-
-  const searchQuery = searchParams.get('q') || '';
-  const statusFilter = searchParams.get('status') || 'All';
-
+  
+  // Use our new URL sync hook
+  const { filters, setFilter } = useUrlFilters();
+  
+  // Get all assets and apply URL filters
   const allAssets = useMemo(() => Object.values(state.assets), [state.assets]);
+  const activeAssets = useMemo(() => allAssets.filter(a => a.status === 'Active'), [allAssets]);
+  
+  const displayedAssets = useMemo(() => filterAssets(allAssets, filters), [allAssets, filters]);
 
-  const filteredAssets = useMemo(() => allAssets.filter(a => {
-    const matchSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (a.driverName?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-    const matchStatus = statusFilter === 'All' || a.status === statusFilter;
-    return matchSearch && matchStatus;
-  }), [allAssets, searchQuery, statusFilter]);
+  // Snapshot the Action Queue counts ONCE when the fleet first populates
+  // This prevents numbers from flickering on every telemetry tick
+  const actionSnapshotRef = useRef<ActionItem[] | null>(null);
+  if (actionSnapshotRef.current === null && allAssets.length > 0) {
+    actionSnapshotRef.current = [
+      { icon: Clock,         label: 'Overdue services',      count: allAssets.filter(a => a.battery < 10).length,             urgent: true  },
+      { icon: Bell,          label: 'Reminders due soon',    count: Math.floor(allAssets.length * 0.02),                      urgent: false },
+      { icon: AlertTriangle, label: 'Open critical issues',  count: allAssets.filter(a => a.battery < 5).length,              urgent: true  },
+      { icon: ShieldAlert,   label: 'Compliance expiring',   count: Math.floor(allAssets.length * 0.005),                     urgent: false },
+      { icon: Zap,           label: 'Out of service',        count: allAssets.filter(a => a.status === 'Offline').length,     urgent: true  },
+      { icon: Wrench,        label: 'Overdue inspections',   count: allAssets.filter(a => a.status === 'Maintenance').length, urgent: false },
+      { icon: ClipboardList, label: 'Inspections pending',   count: Math.floor(allAssets.length * 0.015),                    urgent: false },
+    ];
+  }
 
   const handleAction = async (id: string, action: string) => {
     const updates: Partial<Asset> = action === 'Lock' ? { status: 'Offline' } : { status: 'Maintenance' };
@@ -423,61 +478,43 @@ const Dashboard = () => {
     }
   };
 
-  const pmCompliance   = useMemo(() => Math.round((allAssets.filter(a => a.status !== 'Maintenance').length / (allAssets.length || 1)) * 100), [allAssets]);
-  const inspCompliance = useMemo(() => Math.round((allAssets.filter(a => a.battery > 20).length / (allAssets.length || 1)) * 100), [allAssets]);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      
       {/* Page Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Fleet Overview</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Triage exceptions, track cost trends, and monitor{' '}
-            <span className="text-gray-700 font-medium underline decoration-dotted underline-offset-2">fleet health</span>.
+          <p className="text-sm text-muted-foreground mt-1">
+            Triage exceptions, track cost trends, and monitor <span className="border-b border-dashed border-gray-400 pb-0.5">fleet health</span>.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <select className="text-xs bg-white border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring shadow-sm">
-            <option>Last 30 days</option>
-            <option>Last 7 days</option>
-            <option>Last 90 days</option>
-          </select>
-          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Activity size={12} className="text-emerald-500 animate-pulse" />
-            Updated just now
-          </span>
+          <div className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm flex items-center gap-2">
+            Last 30 days <ChevronRight size={12} className="rotate-90 text-gray-400" />
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
+            <Activity size={14} /> Updated just now
+          </div>
         </div>
       </div>
 
-      {/* Action Queue */}
-      <ActionQueue assets={allAssets} />
+      {/* Action Queue — uses a one-time snapshot so numbers don't flicker */}
+      {actionSnapshotRef.current && <ActionQueue snapshot={actionSnapshotRef.current} />}
 
-      {/* Middle Row: Asset Status | Live Fleet | Powertrain */}
-      <div className="grid grid-cols-3 gap-5">
+      {/* Tri-split Data Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <AssetStatusChart assets={allAssets} />
-        <LiveFleetPanel assets={allAssets} />
+        <LiveFleetPanel assets={activeAssets} />
         <PowertrainMix assets={allAssets} />
       </div>
 
-      {/* Compliance Row */}
-      <div className="grid grid-cols-2 gap-5">
-        <ComplianceCard
-          title="PM Compliance"
-          description="Preventive maintenance — current state"
-          value={pmCompliance}
-          icon={Wrench}
-        />
-        <ComplianceCard
-          title="Inspection Compliance"
-          description="Inspection schedules — current state"
-          value={inspCompliance}
-          icon={CheckCircle2}
-        />
+      {/* Asset Table with Filters */}
+      <div className="space-y-4 pt-4">
+        <FilterPanel filters={filters} setFilter={setFilter} totalAssets={allAssets.length} filteredCount={displayedAssets.length} />
+        <AssetTable assets={displayedAssets} onAction={handleAction} />
       </div>
 
-      {/* Asset Table */}
-      <AssetTable assets={filteredAssets} onAction={handleAction} />
     </div>
   );
 };

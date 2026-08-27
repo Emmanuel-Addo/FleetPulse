@@ -21,9 +21,9 @@ const LAST_NAMES = ['Smith', 'Doe', 'Johnson', 'Brown', 'Davis', 'Miller', 'Wils
 const TYPES: AssetType[] = ['Truck', 'Van', 'Car'];
 const STATUSES: AssetStatus[] = ['Active', 'Idle', 'Maintenance', 'Offline'];
 
-// Base coordinate around a central hub (e.g., Chicago)
-const BASE_LAT = 41.8781;
-const BASE_LNG = -87.6298;
+// Base coordinate — Accra, Ghana (dispatch hub)
+const BASE_LAT = 5.6037;
+const BASE_LNG = -0.1870;
 
 let assets: Asset[] = [];
 
@@ -55,7 +55,8 @@ const startTelemetry = () => {
   // Send initial batch
   postMessage({ type: 'INITIAL_STATE', payload: assets });
 
-  // Simulate updates 2-5 times a second
+  // Simulate updates 2-5 times a second (DISABLED: User requested static data for frontend project)
+  /*
   intervalId = setInterval(() => {
     // Pick a random subset of 10-50 assets to update
     const numToUpdate = Math.floor(Math.random() * 40) + 10;
@@ -79,6 +80,7 @@ const startTelemetry = () => {
     
     postMessage({ type: 'TELEMETRY_UPDATE', payload: updates });
   }, 1000 / (Math.random() * 3 + 2)); // 2 to 5 events per second
+  */
 };
 
 const stopTelemetry = () => {

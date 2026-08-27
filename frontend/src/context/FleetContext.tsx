@@ -114,28 +114,30 @@ const FleetContext = createContext<{
 export const FleetProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(fleetReducer, initialState);
 
-  // Load from LocalStorage on mount
+  // Set up telemetry Web Worker
   useEffect(() => {
-    const saved = localStorage.getItem('fleetpulse_state');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        dispatch({ type: 'UPSERT_ASSETS', payload: Object.values(parsed.assets || {}) });
-      } catch (e) {
-        console.error('Failed to parse saved state', e);
-      }
-    }
-  }, []);
+    // Instantiate the web worker
+    const worker = new Worker(new URL('../workers/telemetryWorker.ts', import.meta.url), {
+      type: 'module'
+    });
 
-  // Save to LocalStorage periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      localStorage.setItem('fleetpulse_state', JSON.stringify({
-        assets: state.assets
-      }));
-    }, 5000); // save every 5 seconds
-    return () => clearInterval(interval);
-  }, [state.assets]);
+    // Listen for messages from the worker
+    worker.onmessage = (event) => {
+      const { type, payload } = event.data;
+      if (type === 'INITIAL_STATE' || type === 'TELEMETRY_UPDATE') {
+        dispatch({ type: 'UPSERT_ASSETS', payload });
+      }
+    };
+
+    // Start the telemetry simulation
+    worker.postMessage('START');
+
+    // Cleanup worker on unmount
+    return () => {
+      worker.postMessage('STOP');
+      worker.terminate();
+    };
+  }, []);
 
   // Offline detection
   useEffect(() => {

@@ -75,6 +75,9 @@ const Hero= () => {
                     <button className="bg-orange-600 hover:bg-orange-500 text-white px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer">
                         Start Free Trial
                     </button>
+                    <a href="/dashboard" className="border border-slate-300 hover:bg-slate-50 text-slate-800 px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer flex items-center gap-2">
+                        Go to Console →
+                    </a>
                 </div>
 
                 <div className="w-full mt-8 border-t border-slate-200"></div>

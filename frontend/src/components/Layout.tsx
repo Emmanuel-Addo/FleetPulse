@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFleet } from '../context/FleetContext';
 import { ToastContainer } from 'react-toastify';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   LayoutDashboard, Radio, Truck, Users, Wrench,
-  BarChart3, Settings, LogOut, Bell, Search, ChevronRight
+  BarChart3, Settings, LogOut, Bell, Search, ChevronRight, Menu, AlertCircle
 } from 'lucide-react';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { icon: Truck, label: 'Vehicles', path: '/vehicles' },
   { icon: Users, label: 'Drivers', path: '/drivers' },
   { icon: Wrench, label: 'Maintenance', path: '/maintenance' },
+  { icon: AlertCircle, label: 'Issues', path: '/issues' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
 ];
 
@@ -22,6 +23,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const workerRef = useRef<Worker | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(false);
+
+  const isCollapsed = isManuallyCollapsed || location.pathname === '/tracking';
 
   useEffect(() => {
     workerRef.current = new Worker(
@@ -61,61 +65,70 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         )}
 
         {/* Sidebar */}
-        <aside className="w-60 bg-white flex flex-col h-full shrink-0 border-r border-gray-100">
-          {/* Logo */}
-          <div className="h-16 flex items-center px-6 border-b border-gray-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
+        <aside className={`${isCollapsed ? 'w-16' : 'w-60'} bg-white flex flex-col h-full shrink-0 border-r border-gray-100 transition-all duration-300 z-50`}>
+          {/* Logo & Toggle */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
+            <div className={`flex items-center gap-2.5 overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+              <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center shrink-0">
                 <Radio size={14} className="text-white" />
               </div>
-              <span className="font-bold text-lg tracking-tight">FleetPulse</span>
+              <span className="font-bold text-lg text-gray-900 tracking-tight whitespace-nowrap">FleetPulse</span>
             </div>
+            <button 
+              onClick={() => setIsManuallyCollapsed(!isManuallyCollapsed)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition shrink-0"
+            >
+              <Menu size={18} />
+            </button>
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 py-5 px-3 space-y-0.5 overflow-y-auto">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 mb-3">Main Menu</p>
+          <nav className={`flex-1 py-5 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-3'}`}>
+            {!isCollapsed && <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 mb-3">Main Menu</p>}
             {navItems.map(({ icon: Icon, label, path }) => {
               const isActive = location.pathname === path;
               return (
-                <a
+                <Link
                   key={label}
-                  href={path}
-                  onClick={e => e.preventDefault()}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+                  to={path}
+                  title={isCollapsed ? label : undefined}
+                  className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+                    isCollapsed ? 'justify-center px-0' : 'px-3'
+                  } ${
                     isActive
                       ? 'bg-black text-white shadow-sm'
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <Icon size={16} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-700'} />
-                  <span>{label}</span>
-                  {isActive && <ChevronRight size={14} className="ml-auto opacity-60" />}
-                </a>
+                  <Icon size={isCollapsed ? 18 : 16} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-700 shrink-0'} />
+                  {!isCollapsed && <span>{label}</span>}
+                </Link>
               );
             })}
 
-            <div className="pt-4 mt-4 border-t border-gray-100">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 mb-3">System</p>
-              <a href="#" onClick={e => e.preventDefault()} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
-                <Settings size={16} className="text-gray-400" />
-                Settings
+            <div className={`pt-4 mt-4 border-t border-gray-100 ${isCollapsed ? '' : 'px-3'}`}>
+              {!isCollapsed && <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-3">System</p>}
+              <a href="#" onClick={e => e.preventDefault()} title={isCollapsed ? "Settings" : undefined} className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all ${isCollapsed ? 'justify-center' : 'px-3'}`}>
+                <Settings size={isCollapsed ? 18 : 16} className="shrink-0" />
+                {!isCollapsed && <span>Settings</span>}
               </a>
-              <a href="#" onClick={e => e.preventDefault()} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-all">
-                <LogOut size={16} />
-                Log out
+              <a href="#" onClick={e => e.preventDefault()} title={isCollapsed ? "Log out" : undefined} className={`flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-all ${isCollapsed ? 'justify-center' : 'px-3'}`}>
+                <LogOut size={isCollapsed ? 18 : 16} className="shrink-0" />
+                {!isCollapsed && <span>Log out</span>}
               </a>
             </div>
           </nav>
 
           {/* User Card */}
-          <div className="p-3 border-t border-gray-100">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold">MG</div>
-              <div>
-                <p className="text-sm font-semibold leading-none">Mason Greenwood</p>
-                <p className="text-xs text-gray-400 mt-0.5">Fleet Dispatcher</p>
-              </div>
+          <div className={`p-3 border-t border-gray-100 ${isCollapsed ? 'flex justify-center' : ''}`}>
+            <div className={`flex items-center gap-3 py-2.5 rounded-xl hover:bg-gray-50 transition cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}>
+              <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold shrink-0">MG</div>
+              {!isCollapsed && (
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-none text-gray-900 truncate">Mason Greenwood</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">Fleet Dispatcher</p>
+                </div>
+              )}
             </div>
           </div>
         </aside>
