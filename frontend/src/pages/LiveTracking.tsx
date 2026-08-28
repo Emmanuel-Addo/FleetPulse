@@ -3,6 +3,7 @@ import { useFleet, Asset } from '../context/FleetContext';
 import { FLEET_ASSETS, FleetAsset } from '../assets/assets';
 import MapComponent from '../components/map/MapComponent';
 import { toast } from 'react-toastify';
+import { useDebounce } from '../hooks/useDebounce';
 import {
   Search, Battery, Zap, MapPin, User, Radio,
   Wifi, ShieldAlert, Truck, Car, Bus,
@@ -168,22 +169,29 @@ const LiveTracking = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'Live' | 'Full fleet'>('Live');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [mapCommand, setMapCommand] = useState<any>(null);
-  const [basemap, setBasemap] = useState<'osm' | 'satellite'>('osm');
+
+  interface MapCommand {
+    type: 'flyTo';
+    lat: number;
+    lng: number;
+    zoom: number;
+  }
+  const [mapCommand, setMapCommand] = useState<MapCommand | null>(null);
 
   // Sidebar always uses the 6 clean Ghana static assets
   // (easy to explain in demos — each vehicle represents a specific route/scenario)
   const listAssets: FleetAsset[] = useMemo(() => {
     let list = [...FLEET_ASSETS];
     if (activeSubTab === 'Live') list = list.filter(a => a.status === 'Active');
-    if (searchQuery) list = list.filter(a =>
-      a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.id.toLowerCase().includes(searchQuery.toLowerCase())
+    if (debouncedSearch) list = list.filter(a =>
+      a.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      a.driverName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      a.id.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
     return list;
-  }, [activeSubTab, searchQuery]);
+  }, [activeSubTab, debouncedSearch]);
 
   const handleSelectAsset = useCallback((asset: Asset | FleetAsset) => {
     setSelectedAsset(asset as Asset);
@@ -201,34 +209,14 @@ const LiveTracking = () => {
       {/* ── Map Area ────────────────────────────────────────────── */}
       <div className="flex-1 relative bg-gray-100">
         <MapComponent
-          basemap={basemap}
           activeLayers={[]}
           mapCommand={mapCommand}
           selectedAssetId={selectedAsset?.id}
           onSelectAsset={handleSelectAsset}
+          assets={listAssets}
         />
 
-        {/* Layer toggle */}
-        <div className="absolute top-4 left-4 z-[500]">
-          <div className="flex items-center bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <button
-              onClick={() => setBasemap('osm')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
-                basemap === 'osm' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Street
-            </button>
-            <button
-              onClick={() => setBasemap('satellite')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition ${
-                basemap === 'satellite' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Satellite
-            </button>
-          </div>
-        </div>
+
 
         {/* Selected vehicle detail card */}
         {selectedAsset && (

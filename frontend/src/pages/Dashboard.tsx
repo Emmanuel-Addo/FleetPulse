@@ -2,13 +2,13 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useFleet, Asset, AssetStatus } from '../context/FleetContext';
-import { useUrlFilters } from '../hooks/useUrlFilters';
+import { useUrlFilters, FilterState } from '../hooks/useUrlFilters';
 import { filterAssets } from '../utils/filterPipeline';
+import { useDebounce } from '../hooks/useDebounce';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../components/ui/tooltip';
-import MapComponent from '../components/map/MapComponent';
 import { toast } from 'react-toastify';
 import {
   AlertTriangle, Bell, CheckCircle2, Clock, ShieldAlert, Wrench, ClipboardList,
@@ -44,12 +44,32 @@ function StatTrend({ value }: { value: number }) {
 
 // ─── Filter Panel ──────────────────────────────────────────────────────────────
 
-function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filters: any, setFilter: any, totalAssets: number, filteredCount: number }) {
-  const statuses = ['Active', 'Idle', 'Maintenance', 'Offline'];
-  
-  const toggleStatus = (status: string) => {
+interface FilterPanelProps {
+  filters: FilterState;
+  setFilter: (key: keyof FilterState, value: string | string[] | number | null) => void;
+  totalAssets: number;
+  filteredCount: number;
+}
+
+function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: FilterPanelProps) {
+  const statuses: AssetStatus[] = ['Active', 'Idle', 'Maintenance', 'Offline'];
+
+  // Local state for the search box — debounced before writing to URL
+  const [searchInput, setSearchInput] = useState(filters.q);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  useEffect(() => {
+    setFilter('q', debouncedSearch);
+  }, [debouncedSearch]);
+
+  // Keep local input in sync if URL param changes externally (e.g. back button)
+  useEffect(() => {
+    setSearchInput(filters.q);
+  }, [filters.q]);
+
+  const toggleStatus = (status: AssetStatus) => {
     if (filters.statuses.includes(status)) {
-      setFilter('statuses', filters.statuses.filter((s: string) => s !== status));
+      setFilter('statuses', filters.statuses.filter((s) => s !== status));
     } else {
       setFilter('statuses', [...filters.statuses, status]);
     }
@@ -66,6 +86,16 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filte
           </div>
           
           <div className="flex flex-wrap items-center gap-4">
+            {/* Debounced Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search vehicles, drivers..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-3 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-300 w-52"
+              />
+            </div>
             {/* Status Toggles */}
             <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-lg border border-gray-200">
               {statuses.map(status => (
@@ -106,7 +136,7 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filte
                     key={tag}
                     onClick={() => {
                       const next = isSelected 
-                        ? filters.tags.filter((t: string) => t !== tag)
+                       ? filters.tags.filter((t) => t !== tag)
                         : [...(filters.tags || []), tag];
                       setFilter('tags', next);
                     }}
@@ -130,6 +160,7 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: { filte
                   setFilter('batteryMin', 0);
                   setFilter('tags', []);
                   setFilter('q', '');
+                  setSearchInput('');
                 }}
                 className="text-xs font-medium text-red-500 hover:text-red-600"
               >

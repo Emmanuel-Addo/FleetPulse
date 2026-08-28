@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,15 +18,15 @@ L.Icon.Default.mergeOptions({
 });
 
 interface MapControllerProps {
-  bounds: any;
-  region: any;
-  zoomCommand: any;
-  mapCommand: any;
+  bounds: [number, number][] | null;
+  region: string | null | undefined;
+  zoomCommand: { type: 'in' | 'out' } | null | undefined;
+  mapCommand: { type: 'reset' | 'flyTo'; lat?: number; lng?: number; zoom?: number } | null | undefined;
 }
 
 function MapController({ bounds, region, zoomCommand, mapCommand }: MapControllerProps) {
     const map = useMap();
-    const nationalCenterRef = useRef<any>([7.9465, -1.0232]);
+    const nationalCenterRef = useRef<[number, number]>([7.9465, -1.0232]);
 
     // No forced flyTo on mount — map starts at world view
 
@@ -38,7 +38,7 @@ function MapController({ bounds, region, zoomCommand, mapCommand }: MapControlle
             nationalCenterRef.current = [centerLat, centerLng];
             map.flyTo([centerLat, centerLng], 5, { duration: 1.5, easeLinearity: 0.25 });
         } else {
-            map.flyToBounds(bounds, { duration: 1.5, easeLinearity: 0.25 });
+            map.flyToBounds(bounds as L.LatLngBoundsExpression, { duration: 1.5, easeLinearity: 0.25 });
         }
     }, [bounds, region, map]);
 
@@ -53,15 +53,19 @@ function MapController({ bounds, region, zoomCommand, mapCommand }: MapControlle
         if (mapCommand.type === 'reset') {
             map.flyTo([7.9465, -1.0232], 5, { duration: 1.8, easeLinearity: 0.25 });
         } else if (mapCommand.type === 'flyTo') {
-            map.flyTo([mapCommand.lat, mapCommand.lng], mapCommand.zoom ?? 12, { duration: 1.5, easeLinearity: 0.25 });
+            map.flyTo([mapCommand.lat!, mapCommand.lng!], mapCommand.zoom ?? 12, { duration: 1.5, easeLinearity: 0.25 });
         }
     }, [mapCommand, map]);
 
     return null;
 }
 
+interface GeoJSONFeature {
+  properties?: Record<string, string | number | null>;
+}
+
 interface HoverLayerProps {
-  data: any;
+  data: GeoJSON.GeoJsonObject;
 }
 
 function HoverLayer({ data }: HoverLayerProps) {
@@ -69,55 +73,77 @@ function HoverLayer({ data }: HoverLayerProps) {
     return (
         <GeoJSON
             data={data}
-            style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' } as any)}
-            onEachFeature={(feature: any, layer: any) => {
-                const name = feature.properties?.DISTRICTS || feature.properties?.REGIONS || '';
+            style={() => ({ stroke: false, fillOpacity: 0.001, className: 'cursor-pointer' } as L.PathOptions)}
+            onEachFeature={(feature: GeoJSONFeature, layer: L.Layer) => {
+                const name = (feature.properties?.DISTRICTS ?? feature.properties?.REGIONS ?? '') as string;
                 if (!name) return;
 
-                layer.bindTooltip(name, {
+                (layer as L.Path).bindTooltip(name, {
                     sticky: true,
                     permanent: false,
                     className: 'district-tooltip',
                     direction: 'top',
-                    offset: [0, -4],
+                    offset: [0, -4] as L.PointTuple,
                 });
 
-                let idleTimer: any = null;
+                let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
                 const resetTimer = () => {
                     if (idleTimer) clearTimeout(idleTimer);
-                    idleTimer = setTimeout(() => layer.closeTooltip(), 1200);
+                    idleTimer = setTimeout(() => (layer as L.Path).closeTooltip(), 1200);
                 };
 
                 layer.on('mousemove', () => {
-                    if (!layer.isTooltipOpen()) layer.openTooltip();
+                    if (!(layer as L.Path).isTooltipOpen()) (layer as L.Path).openTooltip();
                     resetTimer();
                 });
 
                 layer.on('mouseout', () => {
                     if (idleTimer) clearTimeout(idleTimer);
-                    layer.closeTooltip();
+                    (layer as L.Path).closeTooltip();
                 });
 
                 layer.on('click', () => {
-                    map.flyToBounds(layer.getBounds(), { duration: 1.2, easeLinearity: 0.25, padding: [40, 40] });
+                    map.flyToBounds((layer as L.Polygon).getBounds(), { duration: 1.2, easeLinearity: 0.25, padding: [40, 40] });
                 });
             }}
         />
     );
 }
 
+interface FleetAssetMarker {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  battery: number;
+  lat: number;
+  lng: number;
+  speed?: number;
+  driverName?: string;
+  tags?: string[];
+  lastUpdated: number;
+}
+
+interface MapCommand {
+  type: 'reset' | 'flyTo';
+  lat?: number;
+  lng?: number;
+  zoom?: number;
+}
+
 interface MapComponentProps {
-  year?: any;
-  region?: any;
-  district?: any;
+  year?: string;
+  region?: string | null;
+  district?: string | null;
   activeLayers?: string[];
-  zoomCommand?: any;
-  mapCommand?: any;
+  zoomCommand?: { type: 'in' | 'out' } | null;
+  mapCommand?: MapCommand | null;
   basemap?: string;
   ndviOpacity?: number;
   selectedAssetId?: string | null;
-  onSelectAsset?: (asset: any) => void;
+  onSelectAsset?: (asset: FleetAssetMarker) => void;
+  assets?: FleetAssetMarker[];
 }
 
 export default function MapComponent({
@@ -131,12 +157,15 @@ export default function MapComponent({
     ndviOpacity = 1,
     selectedAssetId,
     onSelectAsset,
+    assets,
 }: MapComponentProps) {
     const [layers] = useState<any>({ ndvi: null, region: null, district: null });
     const [fetchedFilters] = useState<any>({ year: null, region: null, district: null });
     const [bounds] = useState<any>(null);
     const [hoverGeoJSON] = useState<any>(null);
     const [loading] = useState(false);
+
+    const displayAssets = assets || FLEET_ASSETS;
 
     return (
         <div className="relative h-full w-full">
@@ -150,10 +179,10 @@ export default function MapComponent({
                 zoomControl={false}
                 worldCopyJump={true}
             >
-                <BasemapLayer type={basemap} />
+                <BasemapLayer />
 
                 {/* Static Ghana fleet assets — always visible, clearly in Ghana */}
-                {FLEET_ASSETS.map(asset => {
+                {displayAssets.map(asset => {
                     const isSelected = asset.id === selectedAssetId;
                     const color =
                         asset.status === 'Active'      ? '#10b981' :
@@ -167,17 +196,17 @@ export default function MapComponent({
                                 className: 'bg-transparent',
                                 html: `
                                     <div style="
-                                        width:${isSelected ? 24 : 18}px;
-                                        height:${isSelected ? 24 : 18}px;
+                                        width:${isSelected ? 14 : 10}px;
+                                        height:${isSelected ? 14 : 10}px;
                                         background:${color};
-                                        border:3px solid white;
+                                        border:2px solid white;
                                         border-radius:50%;
-                                        box-shadow:0 0 0 2px ${color}, 0 2px 8px rgba(0,0,0,0.35);
+                                        box-shadow:0 0 0 1px ${color}, 0 1px 4px rgba(0,0,0,0.3);
                                     "></div>
                                 `,
-                                iconSize: isSelected ? [24, 24] : [18, 18],
-                                iconAnchor: isSelected ? [12, 12] : [9, 9],
-                            })}
+                                iconSize: isSelected ? [14, 14] : [10, 10],
+                                iconAnchor: isSelected ? [7, 7] : [5, 5],
+                             })}
                             zIndexOffset={1000}
                         >
                             <Popup className="rounded-xl overflow-hidden shadow-xl border-0">
@@ -247,33 +276,11 @@ export default function MapComponent({
     );
 }
 
-interface BasemapLayerProps {
-  type: string;
-}
-
-function BasemapLayer({ type }: BasemapLayerProps) {
-    switch (type) {
-        case 'satellite':
-            return (
-                <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-                />
-            );
-        case 'osm':
-            return (
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-            );
-        case 'dark':
-        default:
-            return (
-                <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                />
-            );
-    }
+function BasemapLayer() {
+    return (
+        <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+    );
 }
