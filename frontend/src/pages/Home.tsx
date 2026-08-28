@@ -9,13 +9,13 @@ import NewsLetter from '../components/NewsLetter'
 const Home = () => {
   return (
     <div>
-        <Hero/>
-        <TrustedBrand/>
-        <About />
-        <Testimonails />
-        <NewsLetter />
-     
-        <Footer/>
+      <Hero />
+      <TrustedBrand />
+      <About />
+      <Testimonails />
+      <NewsLetter />
+
+      <Footer />
     </div>
   )
 }

@@ -23,7 +23,7 @@ const TrustedBrand = () => {
                 }
             `}
             </style>
-            <h3 className="text-base text-center text-zinc-500 mt-24 pb-14 font-medium">
+            <h3 className="text-base text-center text-zinc-500 pb-14 font-medium">
                 Trusting by leading brands, including —
             </h3>
             <div className="overflow-hidden w-full relative max-w-5xl mx-auto select-none">

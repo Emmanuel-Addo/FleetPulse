@@ -17,9 +17,9 @@ const Hero= () => {
                 `}
             </style>
 
-            <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto border border-slate-200 pb-24 md:pb-28">
+            <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto pb-24 md:pb-28">
                 <nav className="flex flex-col items-center w-full" >
-                    <div className="flex items-center justify-between p-4 px-6 md:py-4 w-full relative border-b border-slate-200">
+                    <div className="flex items-center justify-between p-4 px-6 md:py-4 w-full relative">
                         <a href="/" className="flex items-center gap-2">
                             <span className="text-xl font-bold text-zinc-900 tracking-tight">FleetPulse</span>
                         </a>
@@ -48,9 +48,9 @@ const Hero= () => {
                                 </svg>
                             </button>
                         </div>
-                        <button className="hidden md:block bg-black hover:bg-zinc-800 text-white px-10 py-3 rounded-lg text-sm transition cursor-pointer group">
+                        <a href="/dashboard" className="hidden md:block bg-black hover:bg-zinc-800 text-white px-10 py-3 rounded-lg text-sm transition cursor-pointer group flex items-center justify-center">
                             Get Started
-                        </button>
+                        </a>
                         <button id="open-menu" onClick={() => setMobileOpen(true)} className="md:hidden bg-zinc-900 hover:bg-zinc-800 text-white p-2 rounded-md aspect-square font-medium transition">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 12h16" /><path d="M4 18h16" /><path d="M4 6h16" />
@@ -59,22 +59,22 @@ const Hero= () => {
                     </div>
                 </nav>
 
-                <div className="flex flex-wrap items-center justify-center gap-2 pl-2.5 pr-4 py-1.5 mt-28 rounded-lg bg-slate-50 border border-slate-200">
+                <div className="flex flex-wrap items-center justify-center gap-2 pl-2.5 pr-4 py-1.5 mt-36 rounded-lg bg-slate-50">
                     <p className='px-2 py-1 rounded-sm border bg-zinc-950 text-xs text-white'>NEW</p>
                     <p className="text-sm text-zinc-800">Real-time Telemetry Engine</p>
                 </div>
 
-                <h1 className="text-5xl md:text-6xl/18 text-center font-medium text-zinc-900 bg-clip-text leading-tight max-w-[700px] mt-4 px-4">
+                <h1 className="text-6xl md:text-7xl text-center font-semibold text-zinc-900 bg-clip-text leading-[1.15] max-w-[850px] mt-8 px-4 tracking-tight">
                     Monitor and Manage Your Fleet in Real Time
                 </h1>
-                <p className="text-sm md:text-base text-center max-w-[500px] mt-2.5 text-zinc-700 px-4">
+                <p className="text-base md:text-lg text-center max-w-[600px] mt-6 text-zinc-700 leading-relaxed px-4">
                     Everything you need to track logistics, monitor battery health, and dispatch your vehicles — all in one place.
                 </p>
 
-                <div className='flex gap-3.5 mt-6'>
-                    <button className="bg-black hover:bg-zinc-800 text-white px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer">
+                <div className='flex gap-3.5 mt-10'>
+                    <a href="/dashboard" className="bg-black hover:bg-zinc-800 text-white px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer flex items-center justify-center">
                         Start Free Trial
-                    </button>
+                    </a>
                     <a href="/dashboard" className="border border-slate-300 hover:bg-slate-50 text-slate-800 px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer flex items-center gap-2">
                         Go to Console →
                     </a>
