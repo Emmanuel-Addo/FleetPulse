@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { Loader2, Globe } from 'lucide-react';
-import { useFleet } from '../../context/FleetContext';
 import { FLEET_ASSETS } from '../../assets/assets';
 
 const EMPTY_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -133,23 +132,11 @@ export default function MapComponent({
     selectedAssetId,
     onSelectAsset,
 }: MapComponentProps) {
-    const [layers, setLayers] = useState<any>({ ndvi: null, region: null, district: null });
-    const [prevLayers, setPrevLayers] = useState<any>(null);
-    const [fetchedFilters, setFetchedFilters] = useState<any>({ year: null, region: null, district: null });
-    const [bounds, setBounds] = useState<any>(null);
-    const [hoverGeoJSON, setHoverGeoJSON] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
-    const clearPrevLayersTimeoutRef = useRef<any>(null);
-    const latestLayersRef = useRef(layers);
-
-    useEffect(() => {
-        latestLayersRef.current = layers;
-    }, [layers]);
-    const { state } = useFleet();
-
-    useEffect(() => {
-        // Disabled GEE layer fetching because there is no backend API configured for this project.
-    }, [year, region, district]);
+    const [layers] = useState<any>({ ndvi: null, region: null, district: null });
+    const [fetchedFilters] = useState<any>({ year: null, region: null, district: null });
+    const [bounds] = useState<any>(null);
+    const [hoverGeoJSON] = useState<any>(null);
+    const [loading] = useState(false);
 
     return (
         <div className="relative h-full w-full">
@@ -230,13 +217,7 @@ export default function MapComponent({
                     <TileLayer url={layers.district} zIndex={40} />
                 )}
 
-                {prevLayers && (
-                    <>
-                        {prevLayers.ndvi && activeLayers.includes('ndvi') && <TileLayer url={prevLayers.ndvi} opacity={0.3} zIndex={9} />}
-                        {prevLayers.region && activeLayers.includes('region') && <TileLayer url={prevLayers.region} opacity={0.3} zIndex={29} />}
-                        {prevLayers.district && activeLayers.includes('district') && <TileLayer url={prevLayers.district} opacity={0.3} zIndex={39} />}
-                    </>
-                )}
+
 
                 {hoverGeoJSON && (
                     <HoverLayer

@@ -17,7 +17,7 @@ const Hero= () => {
                 `}
             </style>
 
-            <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto border border-slate-200">
+            <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto border border-slate-200 pb-24 md:pb-28">
                 <nav className="flex flex-col items-center w-full" >
                     <div className="flex items-center justify-between p-4 px-6 md:py-4 w-full relative border-b border-slate-200">
                         <a href="/" className="flex items-center gap-2">
@@ -78,11 +78,6 @@ const Hero= () => {
                     <a href="/dashboard" className="border border-slate-300 hover:bg-slate-50 text-slate-800 px-10 py-3.5 rounded-lg text-sm font-medium transition cursor-pointer flex items-center gap-2">
                         Go to Console →
                     </a>
-                </div>
-
-                <div className="w-full mt-8 border-t border-slate-200"></div>
-                <div className="w-full px-8 md:px-12 mt-8 md:mt-11">
-                    <img className="max-h-64 md:max-h-96 object-cover object-top w-full max-w-6xl mx-auto border border-zinc-200 rounded-xl" src="https://assets.prebuiltui.com/components/hero-section/hero-modern-dashboard.png" alt="dashboard" />
                 </div>
             </div>
         </>
