@@ -1,5 +1,9 @@
 /// <reference types="vite/client" />
 
+// Leaflet and its marker-cluster plugin ship CSS files without TypeScript
+// declarations. Treat stylesheet imports as valid modules in the editor.
+declare module '*.css';
+
 declare module 'leaflet' {
   const L: any;
   export default L;

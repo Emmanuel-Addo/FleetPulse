@@ -13,6 +13,7 @@ export interface Asset {
   lng: number;
   speed: number;
   driverName?: string;
+  tags: string[];
   lastUpdated: number;
 }
 

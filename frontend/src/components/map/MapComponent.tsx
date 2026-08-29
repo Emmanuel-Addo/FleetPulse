@@ -17,8 +17,10 @@ L.Icon.Default.mergeOptions({
     shadowSize: [0, 0],
 });
 
+type CoordinateBounds = [[number, number], [number, number]];
+
 interface MapControllerProps {
-  bounds: [number, number][] | null;
+  bounds: CoordinateBounds | null;
   region: string | null | undefined;
   zoomCommand: { type: 'in' | 'out' } | null | undefined;
   mapCommand: { type: 'reset' | 'flyTo'; lat?: number; lng?: number; zoom?: number } | null | undefined;
@@ -38,7 +40,7 @@ function MapController({ bounds, region, zoomCommand, mapCommand }: MapControlle
             nationalCenterRef.current = [centerLat, centerLng];
             map.flyTo([centerLat, centerLng], 5, { duration: 1.5, easeLinearity: 0.25 });
         } else {
-            map.flyToBounds(bounds as L.LatLngBoundsExpression, { duration: 1.5, easeLinearity: 0.25 });
+            map.flyToBounds(bounds, { duration: 1.5, easeLinearity: 0.25 });
         }
     }, [bounds, region, map]);
 
@@ -146,6 +148,18 @@ interface MapComponentProps {
   assets?: FleetAssetMarker[];
 }
 
+interface MapLayerUrls {
+  ndvi: string | null;
+  region: string | null;
+  district: string | null;
+}
+
+interface MapFilterState {
+  year: string | null;
+  region: string | null;
+  district: string | null;
+}
+
 export default function MapComponent({
     year,
     region,
@@ -159,10 +173,10 @@ export default function MapComponent({
     onSelectAsset,
     assets,
 }: MapComponentProps) {
-    const [layers] = useState<any>({ ndvi: null, region: null, district: null });
-    const [fetchedFilters] = useState<any>({ year: null, region: null, district: null });
-    const [bounds] = useState<any>(null);
-    const [hoverGeoJSON] = useState<any>(null);
+    const [layers] = useState<MapLayerUrls>({ ndvi: null, region: null, district: null });
+    const [fetchedFilters] = useState<MapFilterState>({ year: null, region: null, district: null });
+    const [bounds] = useState<CoordinateBounds | null>(null);
+    const [hoverGeoJSON] = useState<GeoJSON.GeoJsonObject | null>(null);
     const [loading] = useState(false);
 
     const displayAssets = assets || FLEET_ASSETS;
