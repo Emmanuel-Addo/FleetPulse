@@ -1,5 +1,4 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useFleet, Asset, AssetStatus } from '../context/FleetContext';
 import { useUrlFilters, FilterState } from '../hooks/useUrlFilters';
@@ -11,9 +10,8 @@ import { Progress } from '../components/ui/progress';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../components/ui/tooltip';
 import { toast } from 'react-toastify';
 import {
-  AlertTriangle, Bell, CheckCircle2, Clock, ShieldAlert, Wrench, ClipboardList,
-  ChevronRight, RefreshCw, Lock, RotateCcw, Construction, Filter, SortAsc,
-  TrendingUp, TrendingDown, MapPin, Zap, Activity, Truck, Car, Bus, Battery
+  ChevronRight, Lock, RotateCcw, Construction, Filter,
+  Activity, Truck, Car, Bus, Battery
 } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -32,15 +30,7 @@ const statusDot: Record<AssetStatus, string> = {
   Offline:     'bg-red-500',
 };
 
-function StatTrend({ value }: { value: number }) {
-  const up = value >= 0;
-  return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${up ? 'text-emerald-600' : 'text-red-500'}`}>
-      {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-      {Math.abs(value)}%
-    </span>
-  );
-}
+
 
 // ─── Filter Panel ──────────────────────────────────────────────────────────────
 
@@ -303,17 +293,51 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
 
 // ─── Asset Table (Virtualized) ────────────────────────────────────────────────
 
+type SortField = 'name' | 'battery' | 'status';
+
 function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: string, action: string) => void }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const statusFilter = searchParams.get('status') || 'All';
   const parentRef = useRef<HTMLDivElement>(null);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedAssets = useMemo(() => {
+    return [...assets].sort((a, b) => {
+      const aVal = sortField === 'battery' ? a.battery : (a[sortField] ?? '').toString().toLowerCase();
+      const bVal = sortField === 'battery' ? b.battery : (b[sortField] ?? '').toString().toLowerCase();
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [assets, sortField, sortDir]);
 
   const rowVirtualizer = useVirtualizer({
-    count: assets.length,
+    count: sortedAssets.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
     overscan: 8,
   });
+
+  const SortBtn = ({ field, label }: { field: SortField; label: string }) => (
+    <button
+      onClick={() => toggleSort(field)}
+      className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition ${
+        sortField === field
+          ? 'bg-gray-900 text-white border-gray-900'
+          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+      }`}
+    >
+      {label} {sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+    </button>
+  );
 
   return (
     <Card className="flex flex-col overflow-hidden">
@@ -323,26 +347,11 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
             <CardTitle>Fleet Assets</CardTitle>
             <CardDescription>{assets.length} vehicles listed</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                const p = new URLSearchParams(searchParams);
-                p.set('status', e.target.value);
-                setSearchParams(p);
-              }}
-              className="text-xs bg-secondary border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-            >
-              {['All', 'Active', 'Idle', 'Maintenance', 'Offline'].map(s => (
-                <option key={s} value={s}>{s === 'All' ? 'All statuses' : s}</option>
-              ))}
-            </select>
-            <button className="p-1.5 bg-secondary border border-border rounded-lg hover:bg-accent transition">
-              <Filter size={13} className="text-muted-foreground" />
-            </button>
-            <button className="p-1.5 bg-secondary border border-border rounded-lg hover:bg-accent transition">
-              <SortAsc size={13} className="text-muted-foreground" />
-            </button>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-gray-400 mr-1">Sort:</span>
+            <SortBtn field="name" label="Name" />
+            <SortBtn field="battery" label="Battery" />
+            <SortBtn field="status" label="Status" />
           </div>
         </div>
         {/* Column Headers */}
@@ -360,7 +369,7 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
         <div ref={parentRef} className="h-64 overflow-auto">
           <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
             {rowVirtualizer.getVirtualItems().map((vRow) => {
-              const asset = assets[vRow.index];
+              const asset = sortedAssets[vRow.index];
               return (
                 <div
                   key={asset.id}
@@ -440,8 +449,6 @@ const Dashboard = () => {
   
   // Get all assets and apply URL filters
   const allAssets = useMemo(() => Object.values(state.assets), [state.assets]);
-  const activeAssets = useMemo(() => allAssets.filter(a => a.status === 'Active'), [allAssets]);
-  
   const displayedAssets = useMemo(() => filterAssets(allAssets, filters), [allAssets, filters]);
 
 
