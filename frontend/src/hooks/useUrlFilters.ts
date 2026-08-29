@@ -9,6 +9,10 @@ export interface FilterState {
   batteryMin: number;
   batteryMax: number;
   tags: string[];
+  sortBy: 'name' | 'battery' | 'status';
+  sortDirection: 'asc' | 'desc';
+  page: number;
+  pageSize: number;
 }
 
 export const useUrlFilters = () => {
@@ -20,6 +24,10 @@ export const useUrlFilters = () => {
     const tagsParam = searchParams.get('tags');
     const bMin = searchParams.get('batteryMin');
     const bMax = searchParams.get('batteryMax');
+    const sortBy = searchParams.get('sortBy');
+    const sortDirection = searchParams.get('sortDirection');
+    const page = Number(searchParams.get('page'));
+    const pageSize = Number(searchParams.get('pageSize'));
 
     return {
       q: searchParams.get('q') || '',
@@ -28,6 +36,10 @@ export const useUrlFilters = () => {
       tags: tagsParam ? tagsParam.split(',') : [],
       batteryMin: bMin ? parseInt(bMin, 10) : 0,
       batteryMax: bMax ? parseInt(bMax, 10) : 100,
+      sortBy: sortBy === 'battery' || sortBy === 'status' ? sortBy : 'name',
+      sortDirection: sortDirection === 'desc' ? 'desc' : 'asc',
+      page: Number.isInteger(page) && page > 0 ? page : 1,
+      pageSize: Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100 ? pageSize : 50,
     };
   }, [searchParams]);
 

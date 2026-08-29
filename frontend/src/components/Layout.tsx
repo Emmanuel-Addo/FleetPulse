@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFleet } from '../context/FleetContext';
 import { ToastContainer } from 'react-toastify';
 import { useSearchParams, useLocation, Link } from 'react-router-dom';
+import { useDebounce } from '../hooks/useDebounce';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   LayoutDashboard, Radio, Truck, Users, Wrench,
@@ -19,30 +20,26 @@ const navItems = [
 ];
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { dispatch, state } = useFleet();
-  const workerRef = useRef<Worker | null>(null);
+  const { state } = useFleet();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(false);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
+  const debouncedSearch = useDebounce(searchInput, 250);
 
   const isCollapsed = isManuallyCollapsed || location.pathname === '/tracking';
 
+  // FleetProvider owns the telemetry worker. The layout only debounces the
+  // global search query so typing never causes a URL update on every keystroke.
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('../workers/telemetryWorker.ts', import.meta.url),
-      { type: 'module' }
-    );
-    workerRef.current.onmessage = (e) => {
-      if (e.data.type === 'INITIAL_STATE' || e.data.type === 'TELEMETRY_UPDATE') {
-        dispatch({ type: 'UPSERT_ASSETS', payload: e.data.payload });
-      }
-    };
-    workerRef.current.postMessage('START');
-    return () => {
-      workerRef.current?.postMessage('STOP');
-      workerRef.current?.terminate();
-    };
-  }, [dispatch]);
+    const currentQuery = searchParams.get('q') || '';
+    if (currentQuery === debouncedSearch) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    if (debouncedSearch) nextParams.set('q', debouncedSearch);
+    else nextParams.delete('q');
+    setSearchParams(nextParams);
+  }, [debouncedSearch, searchParams, setSearchParams]);
 
   return (
     <>
@@ -142,13 +139,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <input
                 type="text"
                 placeholder="Search vehicles, drivers..."
-                value={searchParams.get('q') || ''}
-                onChange={(e) => {
-                  const newParams = new URLSearchParams(searchParams);
-                  if (e.target.value) newParams.set('q', e.target.value);
-                  else newParams.delete('q');
-                  setSearchParams(newParams);
-                }}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-300 transition"
               />
             </div>

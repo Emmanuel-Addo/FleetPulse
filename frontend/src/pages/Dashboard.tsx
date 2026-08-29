@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useFleet, Asset, AssetStatus } from '../context/FleetContext';
+import { useFleet, Asset, AssetStatus, RemoteActionType } from '../context/FleetContext';
 import { useUrlFilters, FilterState } from '../hooks/useUrlFilters';
 import { filterAssets } from '../utils/filterPipeline';
 import { useDebounce } from '../hooks/useDebounce';
@@ -293,19 +293,27 @@ function PowertrainMix({ assets }: { assets: Asset[] }) {
 
 // ─── Asset Table (Virtualized) ────────────────────────────────────────────────
 
-type SortField = 'name' | 'battery' | 'status';
+type SortField = FilterState['sortBy'];
 
-function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: string, action: string) => void }) {
+interface AssetTableProps {
+  assets: Asset[];
+  onAction: (id: string, action: RemoteActionType) => void;
+  sortField: SortField;
+  sortDirection: FilterState['sortDirection'];
+  page: number;
+  pageSize: number;
+  onSortChange: (field: SortField, direction: FilterState['sortDirection']) => void;
+  onPageChange: (page: number) => void;
+}
+
+function AssetTable({ assets, onAction, sortField, sortDirection, page, pageSize, onSortChange, onPageChange }: AssetTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+      onSortChange(field, sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
-      setSortDir('asc');
+      onSortChange(field, 'asc');
     }
   };
 
@@ -313,14 +321,18 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
     return [...assets].sort((a, b) => {
       const aVal = sortField === 'battery' ? a.battery : (a[sortField] ?? '').toString().toLowerCase();
       const bVal = sortField === 'battery' ? b.battery : (b[sortField] ?? '').toString().toLowerCase();
-      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [assets, sortField, sortDir]);
+  }, [assets, sortField, sortDirection]);
+
+  const pageCount = Math.max(1, Math.ceil(sortedAssets.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedAssets = sortedAssets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const rowVirtualizer = useVirtualizer({
-    count: sortedAssets.length,
+    count: pagedAssets.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
     overscan: 8,
@@ -335,7 +347,7 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
           : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
       }`}
     >
-      {label} {sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+      {label} {sortField === field ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
     </button>
   );
 
@@ -345,7 +357,7 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Fleet Assets</CardTitle>
-            <CardDescription>{assets.length} vehicles listed</CardDescription>
+            <CardDescription>{assets.length} vehicles - page {currentPage} of {pageCount}</CardDescription>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-gray-400 mr-1">Sort:</span>
@@ -369,7 +381,7 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
         <div ref={parentRef} className="h-64 overflow-auto">
           <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
             {rowVirtualizer.getVirtualItems().map((vRow) => {
-              const asset = sortedAssets[vRow.index];
+              const asset = pagedAssets[vRow.index];
               return (
                 <div
                   key={asset.id}
@@ -435,6 +447,19 @@ function AssetTable({ assets, onAction }: { assets: Asset[]; onAction: (id: stri
           </div>
         </div>
       </CardContent>
+      <div className="flex items-center justify-between border-t border-border px-5 py-3">
+        <span className="text-xs text-muted-foreground">
+          Showing {pagedAssets.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, assets.length)} of {assets.length}
+        </span>
+        <div className="flex gap-2">
+          <button type="button" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)} className="rounded-lg border border-gray-200 px-3 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50">
+            Previous
+          </button>
+          <button type="button" disabled={currentPage === pageCount} onClick={() => onPageChange(currentPage + 1)} className="rounded-lg border border-gray-200 px-3 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50">
+            Next
+          </button>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -452,7 +477,7 @@ const Dashboard = () => {
   const displayedAssets = useMemo(() => filterAssets(allAssets, filters), [allAssets, filters]);
 
 
-  const handleAction = async (id: string, action: string) => {
+  const handleAction = async (id: string, action: RemoteActionType) => {
     const updates: Partial<Asset> = action === 'Lock' ? { status: 'Offline' } : { status: 'Maintenance' };
     try {
       await performRemoteAction(id, action, updates);
@@ -493,7 +518,20 @@ const Dashboard = () => {
       {/* Asset Table with Filters */}
       <div className="space-y-4 pt-4">
         <FilterPanel filters={filters} setFilter={setFilter} totalAssets={allAssets.length} filteredCount={displayedAssets.length} />
-        <AssetTable assets={displayedAssets} onAction={handleAction} />
+        <AssetTable
+          assets={displayedAssets}
+          onAction={handleAction}
+          sortField={filters.sortBy}
+          sortDirection={filters.sortDirection}
+          page={filters.page}
+          pageSize={filters.pageSize}
+          onSortChange={(field, direction) => {
+            setFilter('sortBy', field);
+            setFilter('sortDirection', direction);
+            setFilter('page', 1);
+          }}
+          onPageChange={(page) => setFilter('page', page)}
+        />
       </div>
 
     </div>

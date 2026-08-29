@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 
 export type AssetStatus = 'Active' | 'Idle' | 'Maintenance' | 'Offline';
 export type AssetType = 'Truck' | 'Van' | 'Car';
+export type RemoteActionType = 'Lock' | 'Reroute' | 'Maintenance';
 
 export interface Asset {
   id: string;
@@ -35,17 +36,22 @@ type FleetAction =
   | { type: 'OPTIMISTIC_UPDATE'; payload: { id: string; updates: Partial<Asset> } }
   | { type: 'ROLLBACK_UPDATE'; payload: { id: string; previous: Asset } };
 
+interface TelemetryMessage {
+  type: 'INITIAL_STATE' | 'TELEMETRY_UPDATE';
+  payload: Asset[];
+}
+
 const getInitialState = (): FleetState => {
   try {
     const cached = localStorage.getItem('fleet_assets');
     if (cached) {
-      const assets = JSON.parse(cached);
+      const assets = JSON.parse(cached) as Record<string, Asset>;
       let totalVehicles = 0;
       let availableVehicles = 0;
       let totalDrivers = 0;
       let availableDrivers = 0;
 
-      Object.values(assets).forEach((asset: any) => {
+      Object.values(assets).forEach((asset) => {
         totalVehicles++;
         if (asset.status === 'Active' || asset.status === 'Idle') availableVehicles++;
         if (asset.driverName) {
@@ -162,7 +168,7 @@ const fleetReducer = (state: FleetState, action: FleetAction): FleetState => {
 const FleetContext = createContext<{
   state: FleetState;
   dispatch: React.Dispatch<FleetAction>;
-  performRemoteAction: (id: string, actionType: string, updates: Partial<Asset>) => Promise<void>;
+  performRemoteAction: (id: string, actionType: RemoteActionType, updates: Partial<Asset>) => Promise<void>;
 } | undefined>(undefined);
 
 export const FleetProvider = ({ children }: { children: ReactNode }) => {
@@ -176,7 +182,7 @@ export const FleetProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Listen for messages from the worker
-    worker.onmessage = (event) => {
+    worker.onmessage = (event: MessageEvent<TelemetryMessage>) => {
       const { type, payload } = event.data;
       if (type === 'INITIAL_STATE' || type === 'TELEMETRY_UPDATE') {
         dispatch({ type: 'UPSERT_ASSETS', payload });
@@ -206,7 +212,7 @@ export const FleetProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const performRemoteAction = useCallback(async (id: string, actionType: string, updates: Partial<Asset>) => {
+  const performRemoteAction = useCallback(async (id: string, actionType: RemoteActionType, updates: Partial<Asset>) => {
     const asset = state.assets[id];
     if (!asset) return;
     
@@ -225,7 +231,7 @@ export const FleetProvider = ({ children }: { children: ReactNode }) => {
         }, 800);
       });
       // Success! Nothing more to do, optimistic update holds.
-    } catch (error: any) {
+  } catch (error: unknown) {
       // 3. Rollback on failure
       dispatch({ type: 'ROLLBACK_UPDATE', payload: { id, previous: asset } });
       toast.error(`Action failed: Reverted state for ${asset.name}`);
