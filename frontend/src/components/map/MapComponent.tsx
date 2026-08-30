@@ -184,8 +184,8 @@ export default function MapComponent({
     return (
         <div className="relative h-full w-full">
             <MapContainer
-                center={[20, 0]}
-                zoom={3}
+                center={[5.6037, -0.1870]}
+                zoom={8}
                 minZoom={2}
                 maxZoom={18}
                 zoomSnap={0.5}

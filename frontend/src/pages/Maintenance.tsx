@@ -62,13 +62,13 @@ const Maintenance = () => {
           { label: 'Completed (30d)', value: Math.floor(assets.length * 0.05), icon: CheckCircle2, color: 'text-emerald-600' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-                <Icon size={16} className={color} />
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+                <Icon size={20} className={color} />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-lg font-bold">{value}</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+                <p className="text-2xl font-bold">{value}</p>
               </div>
             </CardContent>
           </Card>
@@ -77,7 +77,7 @@ const Maintenance = () => {
 
       {/* Maintenance Queue */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-5">
           <CardTitle>Maintenance Queue</CardTitle>
           <CardDescription>{maintenanceItems.length} vehicles require attention</CardDescription>
         </CardHeader>

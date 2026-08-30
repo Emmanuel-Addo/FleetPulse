@@ -10,24 +10,24 @@ describe('filterPipeline', () => {
   ];
 
   it('should return all assets when no filters are applied', () => {
-    const result = filterAssets(mockAssets, { q: '', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: [] });
+    const result = filterAssets(mockAssets, { q: '', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: [], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(3);
   });
 
   it('should filter by search query (name)', () => {
-    const result = filterAssets(mockAssets, { q: 'Truck', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: [] });
+    const result = filterAssets(mockAssets, { q: 'Truck', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: [], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(1);
     expect(result[0].name).toBe('Truck A');
   });
 
   it('should filter by status', () => {
-    const result = filterAssets(mockAssets, { q: '', statuses: ['Offline'], types: [], batteryMin: 0, batteryMax: 100, tags: [] });
+    const result = filterAssets(mockAssets, { q: '', statuses: ['Offline'], types: [], batteryMin: 0, batteryMax: 100, tags: [], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(1);
     expect(result[0].status).toBe('Offline');
   });
 
   it('should filter by battery range', () => {
-    const result = filterAssets(mockAssets, { q: '', statuses: [], types: [], batteryMin: 20, batteryMax: 100, tags: [] });
+    const result = filterAssets(mockAssets, { q: '', statuses: [], types: [], batteryMin: 20, batteryMax: 100, tags: [], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(2);
     expect(result.map(a => a.id)).not.toContain('2'); // Van B has 10%
   });
@@ -37,13 +37,13 @@ describe('filterPipeline', () => {
       { id: '1', name: 'Truck A', type: 'Truck', status: 'Active', battery: 80, lat: 0, lng: 0, speed: 50, tags: ['Priority'], lastUpdated: 0 },
       { id: '2', name: 'Van B', type: 'Van', status: 'Offline', battery: 10, lat: 0, lng: 0, speed: 0, tags: ['Low Fuel'], lastUpdated: 0 },
     ];
-    const result = filterAssets(assetsWithTags, { q: '', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: ['Priority'] });
+    const result = filterAssets(assetsWithTags, { q: '', statuses: [], types: [], batteryMin: 0, batteryMax: 100, tags: ['Priority'], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(1);
     expect(result[0].id).toBe('1');
   });
 
   it('should apply complex multi-dimensional filtering', () => {
-    const result = filterAssets(mockAssets, { q: '', statuses: ['Active', 'Idle'], types: ['Truck', 'Car'], batteryMin: 40, batteryMax: 100, tags: [] });
+    const result = filterAssets(mockAssets, { q: '', statuses: ['Active', 'Idle'], types: ['Truck', 'Car'], batteryMin: 40, batteryMax: 100, tags: [], sortBy: 'name', sortDirection: 'asc', page: 1, pageSize: 50 });
     expect(result.length).toBe(2);
   });
 });

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Users, UserCheck, UserX, Star, Search, Plus } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 // Generate stable driver list from assets
 const getRating = (seed: string) => {
@@ -48,7 +49,10 @@ const Drivers = () => {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Drivers</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Manage driver profiles, assignments, and performance.</p>
         </div>
-        <button className="flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-800 transition">
+        <button 
+          onClick={() => toast.info('Add Driver functionality coming soon!')}
+          className="flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-800 transition"
+        >
           <Plus size={14} /> Add Driver
         </button>
       </div>
@@ -62,13 +66,13 @@ const Drivers = () => {
           { label: 'Avg. Rating', value: `${(drivers.reduce((s, d) => s + parseFloat(d.rating), 0) / (drivers.length || 1)).toFixed(1)} ★`, icon: Star, color: 'text-amber-500' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-                <Icon size={16} className={color} />
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+                <Icon size={20} className={color} />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-lg font-bold">{value}</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+                <p className="text-2xl font-bold">{value}</p>
               </div>
             </CardContent>
           </Card>
@@ -77,19 +81,19 @@ const Drivers = () => {
 
       {/* Driver Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-5">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative flex-1 max-w-sm">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search drivers..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full text-sm bg-secondary border border-border rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full text-sm bg-secondary border border-border rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
-            <span className="text-xs text-muted-foreground ml-auto">{filtered.length} drivers</span>
+            <span className="text-sm font-medium text-muted-foreground ml-auto">{filtered.length} drivers</span>
           </div>
         </CardHeader>
         <CardContent className="p-0">

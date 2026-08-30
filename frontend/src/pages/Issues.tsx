@@ -249,7 +249,7 @@ const Issues = () => {
 
         <select
           value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-          className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-600 focus:outline-none shadow-sm"
+          className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
         >
           <option value="All">All Categories</option>
           {CATEGORIES.map(c => <option key={c}>{c}</option>)}
@@ -258,7 +258,7 @@ const Issues = () => {
 
       {/* Table */}
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 py-3.5 bg-gray-50/80 border-b border-gray-100 grid grid-cols-[24px_36px_2fr_180px_110px_100px_110px_110px_36px] text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        <div className="px-6 py-3.5 bg-gray-50/80 border-b border-gray-100 grid grid-cols-[24px_48px_2fr_180px_110px_100px_110px_110px_36px] gap-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
           <span />
           <span>#</span>
           <span>Summary</span>
@@ -286,7 +286,7 @@ const Issues = () => {
 
               return (
                 <div key={issue.id}
-                  className="grid grid-cols-[24px_36px_2fr_180px_110px_100px_110px_110px_36px] items-center px-6 py-5 hover:bg-gray-50/60 transition-colors group border-b border-gray-50 last:border-b-0"
+                  className="grid grid-cols-[24px_48px_2fr_180px_110px_100px_110px_110px_36px] gap-4 items-center px-6 py-5 hover:bg-gray-50/60 transition-colors group border-b border-gray-50 last:border-b-0"
                 >
                   {/* Urgent dot */}
                   <span>{issue.status === 'Open' && issue.priority === 'Critical' && (

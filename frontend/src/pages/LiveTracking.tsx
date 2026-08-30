@@ -352,18 +352,18 @@ const LiveTracking = () => {
       <div className="w-[420px] flex flex-col shrink-0 border-l border-gray-100 bg-white z-10 shadow-sm mr-4">
 
         {/* Tab bar */}
-        <div className="flex px-4 pt-4 pb-3 gap-2 border-b border-gray-100">
+        <div className="flex px-4 pt-4 pb-3 gap-3 border-b border-gray-100">
           {(['Live', 'Alerts', 'All'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition ${
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition ${
                 activeTab === tab ? 'bg-gray-900 text-white' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
               }`}
             >
               {tab}
               {tab === 'Alerts' && alertCount > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold bg-red-500 text-white rounded-full">
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
                   {alertCount}
                 </span>
               )}
@@ -400,12 +400,12 @@ const LiveTracking = () => {
         </div>
 
         {/* Status filter pills */}
-        <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-1.5 flex-wrap">
+        <div className="px-3 py-3 border-b border-gray-100 flex items-center gap-2 flex-wrap">
           {STATUS_FILTERS.map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full border transition ${
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition ${
                 statusFilter === s
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
