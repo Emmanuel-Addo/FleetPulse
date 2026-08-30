@@ -37,8 +37,8 @@ npm run dev   →   http://localhost:5173
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 + TypeScript |
-| Routing | React Router v6 |
+| Framework | React 19 + TypeScript |
+| Routing | React Router v7 |
 | State Management | React Context + useReducer |
 | Real-time Engine | **Web Workers** (off-main-thread telemetry) |
 | Map | React-Leaflet + Marker Clustering |
@@ -143,9 +143,10 @@ yarn test
 
 | File | What it tests |
 |---|---|
-| `filterPipeline.test.ts` | Multi-dimensional filter logic (status, battery, search) |
-| `useUrlFilters.test.tsx` | URL parsing and state sync for search params |
-| `FleetContext.test.tsx` | Optimistic update + rollback state machine |
+| `filterPipeline.test.ts` | Multi-dimensional filter logic — search, status, type, battery range, tags, combined (17 tests) |
+| `useUrlFilters.test.tsx` | URL parameter parsing, bidirectional sync, defaults, edge cases (10 tests) |
+| `useDebounce.test.ts` | Debounce hook — timing, delay, rapid changes (5 tests) |
+| `FleetContext.test.tsx` | Optimistic update + rollback, UPSERT, offline state, persistence, error boundary (8 tests) |
 
 ---
 
@@ -210,7 +211,8 @@ frontend/src/
 - [x] **Virtual list** — `@tanstack/react-virtual` for the fleet table
 - [x] **URL-synced filters** — deep-linkable dashboard filters
 - [x] **Offline detection** — banner shown when network is lost
-- [x] **Unit tests** — 8 tests across 3 files, all passing
+- [x] **Unit tests** — 40 tests across 4 files, all passing
+- [x] **Core logic coverage** — filter pipeline (100%), URL sync (100%), debounce (100%), context (67%+)
 - [x] **Telemetry Issue Tracker** — category-aware, context-specific form
 - [x] **Responsive sidebar** — collapses to icons on Live Tracking
 

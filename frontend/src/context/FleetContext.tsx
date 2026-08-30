@@ -174,28 +174,45 @@ const FleetContext = createContext<{
 export const FleetProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(fleetReducer, initialState);
 
-  // Set up telemetry Web Worker
+  // Set up telemetry Web Worker with rAF-based batching
   useEffect(() => {
-    // Instantiate the web worker
     const worker = new Worker(new URL('../workers/telemetryWorker.ts', import.meta.url), {
       type: 'module'
     });
 
-    // Listen for messages from the worker
-    worker.onmessage = (event: MessageEvent<TelemetryMessage>) => {
-      const { type, payload } = event.data;
-      if (type === 'INITIAL_STATE' || type === 'TELEMETRY_UPDATE') {
-        dispatch({ type: 'UPSERT_ASSETS', payload });
+    // Batch incoming telemetry into animation frames to cap re-renders at ~60 FPS
+    let pendingPayload: Asset[] = [];
+    let rafId: number | null = null;
+
+    const flushBatch = () => {
+      rafId = null;
+      if (pendingPayload.length > 0) {
+        const batch = pendingPayload;
+        pendingPayload = [];
+        dispatch({ type: 'UPSERT_ASSETS', payload: batch });
       }
     };
 
-    // Start the telemetry simulation
+    worker.onmessage = (event: MessageEvent<TelemetryMessage>) => {
+      const { type, payload } = event.data;
+      if (type === 'INITIAL_STATE') {
+        // Initial state is dispatched immediately (no batching needed)
+        dispatch({ type: 'UPSERT_ASSETS', payload });
+      } else if (type === 'TELEMETRY_UPDATE') {
+        // Accumulate and schedule a single flush on the next animation frame
+        pendingPayload = pendingPayload.concat(payload);
+        if (rafId === null) {
+          rafId = requestAnimationFrame(flushBatch);
+        }
+      }
+    };
+
     worker.postMessage('START');
 
-    // Cleanup worker on unmount
     return () => {
       worker.postMessage('STOP');
       worker.terminate();
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 

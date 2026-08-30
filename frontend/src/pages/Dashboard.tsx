@@ -103,18 +103,29 @@ function FilterPanel({ filters, setFilter, totalAssets, filteredCount }: FilterP
               ))}
             </div>
 
-            {/* Battery Filter */}
+            {/* Battery Range Filter */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
               <Battery size={14} className="text-gray-400" />
-              <span className="text-xs font-medium text-gray-600">Battery Min:</span>
+              <span className="text-xs font-medium text-gray-600">Battery:</span>
               <input 
                 type="range" 
                 min="0" max="100" step="5"
                 value={filters.batteryMin}
                 onChange={(e) => setFilter('batteryMin', parseInt(e.target.value))}
-                className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                title={`Min: ${filters.batteryMin}%`}
               />
-              <span className="text-xs font-bold w-6">{filters.batteryMin}%</span>
+              <span className="text-xs text-gray-500">{filters.batteryMin}%</span>
+              <span className="text-xs text-gray-400">–</span>
+              <input 
+                type="range" 
+                min="0" max="100" step="5"
+                value={filters.batteryMax}
+                onChange={(e) => setFilter('batteryMax', parseInt(e.target.value))}
+                className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                title={`Max: ${filters.batteryMax}%`}
+              />
+              <span className="text-xs font-bold w-10">{filters.batteryMin}%–{filters.batteryMax}%</span>
             </div>
             
             {/* Tag Toggles */}
