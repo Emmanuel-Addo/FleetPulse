@@ -1,7 +1,7 @@
 // src/workers/telemetryWorker.ts
 
-export type AssetStatus = 'Active' | 'Idle' | 'Maintenance' | 'Offline';
-export type AssetType = 'Truck' | 'Van' | 'Car';
+export type AssetStatus = "Active" | "Idle" | "Maintenance" | "Offline";
+export type AssetType = "Truck" | "Van" | "Car";
 
 export interface Asset {
   id: string;
@@ -17,18 +17,47 @@ export interface Asset {
   lastUpdated: number;
 }
 
-const FIRST_NAMES = ['John', 'Jane', 'Alex', 'Emily', 'Chris', 'Katie', 'Mike', 'Sarah', 'David', 'Laura'];
-const LAST_NAMES = ['Smith', 'Doe', 'Johnson', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Anderson'];
-const TYPES: AssetType[] = ['Truck', 'Van', 'Car'];
-const STATUSES: AssetStatus[] = ['Active', 'Idle', 'Maintenance', 'Offline'];
+const FIRST_NAMES = [
+  "John",
+  "Jane",
+  "Alex",
+  "Emily",
+  "Chris",
+  "Katie",
+  "Mike",
+  "Sarah",
+  "David",
+  "Laura",
+];
+const LAST_NAMES = [
+  "Smith",
+  "Doe",
+  "Johnson",
+  "Brown",
+  "Davis",
+  "Miller",
+  "Wilson",
+  "Moore",
+  "Taylor",
+  "Anderson",
+];
+const TYPES: AssetType[] = ["Truck", "Van", "Car"];
+const STATUSES: AssetStatus[] = ["Active", "Idle", "Maintenance", "Offline"];
 
 // Base coordinate — Accra, Ghana (dispatch hub)
 const BASE_LAT = 5.6037;
-const BASE_LNG = -0.1870;
+const BASE_LNG = -0.187;
 
 let assets: Asset[] = [];
 
-const MOCK_TAGS = ['Delayed', 'Low Fuel', 'Over Speeding', 'Local Dispatch', 'Re-routed', 'Priority'];
+const MOCK_TAGS = [
+  "Delayed",
+  "Low Fuel",
+  "Over Speeding",
+  "Local Dispatch",
+  "Re-routed",
+  "Priority",
+];
 
 // Initialize 1000 assets
 const initializeAssets = () => {
@@ -42,7 +71,7 @@ const initializeAssets = () => {
     }
 
     assets.push({
-      id: `ASSET-${i.toString().padStart(4, '0')}`,
+      id: `ASSET-${i.toString().padStart(4, "0")}`,
       name: `Vehicle ${i}`,
       type: TYPES[Math.floor(Math.random() * TYPES.length)],
       status: STATUSES[Math.floor(Math.random() * STATUSES.length)],
@@ -52,7 +81,7 @@ const initializeAssets = () => {
       speed: Math.floor(Math.random() * 80),
       driverName: `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`,
       tags: assetTags,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     });
   }
 };
@@ -65,34 +94,42 @@ const ctx: any = self;
 const startTelemetry = () => {
   if (isRunning) return;
   isRunning = true;
-  
+
   // Send initial batch
-  ctx.postMessage({ type: 'INITIAL_STATE', payload: assets });
+  ctx.postMessage({ type: "INITIAL_STATE", payload: assets });
 
   // Simulate updates 2-5 times a second
-  intervalId = setInterval(() => {
-    // Pick a random subset of 10-50 assets to update
-    const numToUpdate = Math.floor(Math.random() * 40) + 10;
-    const updates: Asset[] = [];
-    
-    for (let i = 0; i < numToUpdate; i++) {
-      const idx = Math.floor(Math.random() * assets.length);
-      const asset = assets[idx];
-      
-      // Mutate
-      if (asset.status === 'Active') {
-        asset.lat += (Math.random() - 0.5) * 0.01;
-        asset.lng += (Math.random() - 0.5) * 0.01;
-        asset.battery = Math.max(0, asset.battery - 0.1);
-        asset.speed = Math.floor(Math.random() * 80);
+  intervalId = setInterval(
+    () => {
+      // Pick a random subset of 10-50 assets to update
+      const numToUpdate = Math.floor(Math.random() * 40) + 10;
+      const updates: Asset[] = [];
+
+      for (let i = 0; i < numToUpdate; i++) {
+        const idx = Math.floor(Math.random() * assets.length);
+        const asset = assets[idx];
+
+        // Mutate active vehicles: movement, battery drain, speed changes
+        if (asset.status === "Active") {
+          asset.lat += (Math.random() - 0.5) * 0.01;
+          asset.lng += (Math.random() - 0.5) * 0.01;
+          asset.battery = Math.max(0, asset.battery - 1);
+          asset.speed = Math.floor(Math.random() * 80);
+        } else if (asset.status === "Idle") {
+          // Idle vehicles slowly drain battery
+          asset.battery = Math.max(0, asset.battery - 0.5);
+          asset.speed = 0;
+        }
+
+        asset.lastUpdated = Date.now();
+
+        updates.push({ ...asset });
       }
-      asset.lastUpdated = Date.now();
-      
-      updates.push({ ...asset });
-    }
-    
-    ctx.postMessage({ type: 'TELEMETRY_UPDATE', payload: updates });
-  }, 1000 / (Math.random() * 3 + 2)); // 2 to 5 events per second
+
+      ctx.postMessage({ type: "TELEMETRY_UPDATE", payload: updates });
+    },
+    1000 / (Math.random() * 3 + 2),
+  ); // 2 to 5 events per second
 };
 
 const stopTelemetry = () => {
@@ -104,10 +141,10 @@ const stopTelemetry = () => {
 };
 
 ctx.onmessage = (e: MessageEvent) => {
-  if (e.data === 'START') {
+  if (e.data === "START") {
     if (assets.length === 0) initializeAssets();
     startTelemetry();
-  } else if (e.data === 'STOP') {
+  } else if (e.data === "STOP") {
     stopTelemetry();
   }
 };

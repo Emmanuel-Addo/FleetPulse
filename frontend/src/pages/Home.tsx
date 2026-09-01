@@ -1,10 +1,10 @@
-import React from 'react'
-import Hero from '../components/Hero'
-import About from '../components/About'
-import TrustedBrand from '../components/TrustedBrand'
-import Footer from '../components/Footer'
-import Testimonails from '../components/Testimonails'
-import NewsLetter from '../components/NewsLetter'
+import React from "react";
+import Hero from "../components/Hero";
+import About from "../components/About";
+import TrustedBrand from "../components/TrustedBrand";
+import Footer from "../components/Footer";
+import Testimonails from "../components/Testimonails";
+import NewsLetter from "../components/NewsLetter";
 
 const Home = () => {
   return (
@@ -17,7 +17,7 @@ const Home = () => {
 
       <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
